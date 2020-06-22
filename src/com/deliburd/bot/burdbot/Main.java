@@ -28,7 +28,7 @@ public class Main extends ListenerAdapter {
     {
         CommandManager.addCommand("f", "aah");
 
-        JDA jda = JDABuilder.createDefault(Constant.BOT_TEST_TOKEN_STRING).build();
+        JDA jda = JDABuilder.createDefault(Constant.BOT_TOKEN_STRING).build();
         jda.addEventListener(new CommandManager(), new Main());
     }
     
