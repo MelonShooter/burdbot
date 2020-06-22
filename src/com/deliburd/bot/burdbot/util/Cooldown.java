@@ -25,7 +25,7 @@ public class Cooldown {
 	/**
 	 * Resets the cooldown
 	 */
-	public void ResetCooldown() {
+	public void resetCooldown() {
 		lastAction = Instant.now().toEpochMilli();
 	}
 
@@ -34,7 +34,7 @@ public class Cooldown {
 	 * 
 	 * @return The current cooldown
 	 */
-	public long GetTotalCooldown() {
+	public long getTotalCooldown() {
 		return cooldown;
 	}
 	
@@ -43,7 +43,7 @@ public class Cooldown {
 	 * 
 	 * @param newCooldown The new cooldown
 	 */
-	public void ChangeTotalCooldown(long newCooldown) {
+	public void changeTotalCooldown(long newCooldown) {
 		cooldown = newCooldown;
 	}
 	
@@ -52,8 +52,8 @@ public class Cooldown {
 	 * 
 	 * @return Whether the cooldown is up
 	 */
-	public boolean IsCooldownOver() {
-		return GetCooldownTimeRemaining() == 0;
+	public boolean isCooldownOver() {
+		return getCooldownTimeRemaining() == 0;
 	}
 	
 	/**
@@ -61,7 +61,7 @@ public class Cooldown {
 	 * 
 	 * @return The time remaining in the cooldown in milliseconds. Returns 0 if the cooldown is over.
 	 */
-	public long GetCooldownTimeRemaining() {
+	public long getCooldownTimeRemaining() {
 		long timeRemaining = lastAction + cooldown - Instant.now().toEpochMilli();
 		
 		if(timeRemaining > 0) {
