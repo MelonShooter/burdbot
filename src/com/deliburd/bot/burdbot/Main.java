@@ -8,6 +8,7 @@ import com.deliburd.bot.burdbot.commands.CommandManager;
 import com.deliburd.readingpuller.ReadingManager;
 import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
+import com.deliburd.readingpuller.TextConstant;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -26,6 +27,7 @@ public class Main extends ListenerAdapter {
     public static void main(String[] args)
     throws LoginException
     {
+    	System.out.println(TextConstant.WORKING_DIRECTORY);
         CommandManager.addCommand("f", "aah");
 
         JDA jda = JDABuilder.createDefault(Constant.BOT_TOKEN_STRING).build();
