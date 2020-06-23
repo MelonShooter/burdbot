@@ -22,7 +22,7 @@ public class Main {
 	public static void main(String[] args)
     throws LoginException
     {
-        reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
+        //reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
         
 		MultiCommand fetchTextCommand = CommandManager.addCommand("fetchtext", Constant.FETCH_TEXT_DESCRIPTION)
 				.setDefaultAction(new MultiCommandAction() {
@@ -69,6 +69,6 @@ public class Main {
 					ErrorLogger.LogException(e);
 				}
 			}
-		}, 0, interval);
+		}, 0, interval * 1000);
 	}
 }

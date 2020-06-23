@@ -180,8 +180,7 @@ public class MultiCommand extends Command {
 			throw new RuntimeException("This command has already been finalized.");
 		}
 
-		//MAKE FOR LOOP HERE THAT ADDS TO THE ARRAYLIST UNTIL ITS AT THE DESIGNATED POSITION IF NECESSARY.
-		//MAKE IT ARRAYUTIL
+		ArrayUtil.ensureArrayListSize(argumentList, argumentPosition + 1);
 		var argumentMap = argumentList.get(argumentPosition);
 
 		if(argumentMap == null) {
@@ -218,6 +217,7 @@ public class MultiCommand extends Command {
 			throw new RuntimeException("This command has already been finalized.");
 		}
 
+		ArrayUtil.ensureArrayListSize(argumentList, argumentPosition + 1);
 		var argumentMap = argumentList.get(argumentPosition);
 
 		if(argumentMap == null) {

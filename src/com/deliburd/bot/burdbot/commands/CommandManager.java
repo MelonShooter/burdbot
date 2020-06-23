@@ -43,7 +43,7 @@ public class CommandManager extends ListenerAdapter {
 					channel.sendMessage(command.commandDescription);
 				}
 			}
-		}, null)
+		}, new String[] {null})
 		.setBaseAction(new MultiCommandAction() {
 			@Override
 			public void OnCommandRun(String[] args, MessageChannel channel) {
