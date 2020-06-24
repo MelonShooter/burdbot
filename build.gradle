@@ -14,7 +14,7 @@ plugins {
 
 mainClassName = 'com.deliburd.bot.burdbot.Main'
 
-version = '1.0-test'
+version = '2.0-test'
 
 sourceSets {
 	main.java.srcDirs = ['src']
