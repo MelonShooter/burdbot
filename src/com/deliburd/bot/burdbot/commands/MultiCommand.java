@@ -33,6 +33,8 @@ public class MultiCommand extends Command {
 	private MultiCommandAction defaultAction;
 	private String[] argumentDescriptions;
 	private long normalCooldown;
+	private int minArguments = 0;
+	private int maxArguments = 0;
 	
 	/**
 	 * A bot command with additional arguments
@@ -52,6 +54,21 @@ public class MultiCommand extends Command {
 	public Command setCooldown(long newCooldown) {
 		super.setCooldown(newCooldown);
 		normalCooldown = newCooldown;
+		return this;
+	}
+	
+	/**
+	 * Sets the minimum number of arguments this command must have.
+	 * This will give the user an invalid argument message if this requirement isn't met.
+	 * By default, this is 0.
+	 * This will not affect a base action when no arguments are typed, but will affect the command in other cases.
+	 * 
+	 * @param minArgumentCount The minimum number of arguments
+	 * @return The changed MultiCommand
+	 */
+	public MultiCommand setMinArguments(int minArgumentCount) {
+		minArguments = minArgumentCount;
+		
 		return this;
 	}
 	
@@ -168,6 +185,12 @@ public class MultiCommand extends Command {
 			argumentAliasMap = new HashMap<String, String>();
 			argumentList.set(argumentPosition, argumentMap);
 			argumentAliasLookup.set(argumentPosition, argumentAliasMap);
+			
+			final int argumentNumber = argumentPosition + 1;
+			
+			if(argumentNumber > maxArguments) {
+				maxArguments = argumentNumber;
+			}
 		} else {
 			throw new RuntimeException("This argument was already declared.");
 		}
@@ -226,6 +249,11 @@ public class MultiCommand extends Command {
 			}
 		}
 		
+		final int argumentNumber = argumentPosition + 1;
+		
+		if(argumentNumber > maxArguments) {
+			maxArguments = argumentNumber;
+		}
 		
 		return this;
 	}
@@ -301,7 +329,10 @@ public class MultiCommand extends Command {
 				baseAction.OnCommandRun(null, channel);
 				commandCooldown.changeTotalCooldown(normalCooldown);
 			}
-			
+
+			return;
+		} else if(args.length < minArguments || args.length > maxArguments) {
+			giveInvalidArgumentMessage(channel);
 			return;
 		}
 		

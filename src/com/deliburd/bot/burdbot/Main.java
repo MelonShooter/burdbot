@@ -19,8 +19,6 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 
-//TODO: IN MULTICOMMAND, CREATE A WAY TO SPECIFY MIN AMOUNT OF ARGUMENTS
-
 public class Main {
 	public static void main(String[] args)
     throws LoginException
@@ -30,6 +28,7 @@ public class Main {
 		ReadingManager.createTextFolderStructure();
         
 		MultiCommand fetchTextCommand = CommandManager.addCommand("fetchtext", Constant.FETCH_TEXT_DESCRIPTION)
+				.setMinArguments(2)
 				.setDefaultAction(new MultiCommandAction() {
 					@Override
 					public void OnCommandRun(String[] args, MessageChannel channel) {
