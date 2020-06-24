@@ -2,12 +2,15 @@ package com.deliburd.bot.burdbot.commands;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import com.deliburd.bot.burdbot.Constant;
 import com.deliburd.bot.burdbot.util.ArrayUtil;
+import com.deliburd.bot.burdbot.util.BotUtil;
 import com.deliburd.bot.burdbot.util.NodeTreeMap;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 
 public class MultiCommand extends Command {
 	/**
@@ -16,8 +19,15 @@ public class MultiCommand extends Command {
 	 * Each HashMap contains an argument as the key along with its aliases as the value
 	 * A null array within the HashMap means the argument has no aliases
 	 * An empty HashMap within the ArrayList means the argument at the position can take any value.
+	 * Is null after the command is finalized.
 	 */
-	private ArrayList<HashMap<String, String[]>> argumentList;
+	private ArrayList<LinkedHashMap<String, String[]>> argumentList;
+	
+	/**
+	 * Used to match aliases up to their base argument
+	 * An empty HashMap means that that argument is variable
+	 */
+	private ArrayList<HashMap<String, String>> argumentAliasLookup;
 	private NodeTreeMap<String, MultiCommandAction> commandArgumentMap;
 	private MultiCommandAction baseAction;
 	private MultiCommandAction defaultAction;
@@ -32,7 +42,9 @@ public class MultiCommand extends Command {
 	 */
 	MultiCommand(String command, String description) {
 		super(command, description);
-		argumentList = new ArrayList<HashMap<String, String[]>>();
+		normalCooldown = commandCooldown.getTotalCooldown();
+		argumentList = new ArrayList<LinkedHashMap<String, String[]>>();
+		argumentAliasLookup = new ArrayList<HashMap<String, String>>();
 		commandArgumentMap = new NodeTreeMap<String, MultiCommandAction>();
 	}
 	
@@ -105,47 +117,11 @@ public class MultiCommand extends Command {
 			throw new RuntimeException("This command has already been finalized.");
 		}
 		
-		var argumentsWithAliases = new String [arguments.length][];
-		
-		for(int i = 0; i < arguments.length; i++) {
-			final var argument = arguments[i];
-			final var argumentMap = argumentList.get(i);
-			String[] argumentArray;
-			
-			if(argument == null) {
-				if(argumentMap.isEmpty()) { // Means it can accept any arguments
-					argumentArray = new String[1];
-					argumentArray[0] = null;
-				} else { // Shouldn't be null
-					throw new RuntimeException("Argument " + i + " was null and not a variable argument.");
-				}
- 			} else if (argument.isBlank()) { //An argument was blank
-				throw new RuntimeException("Argument " + i + " was blank.");
-			} else if(argumentMap == null) { //No argument declared at this index
-				throw new RuntimeException("Argument " + i + " wasn't declared");
-			} else if(argumentMap.containsKey(argument)) {
-				if(argumentMap.get(argument) == null) { // Must have no aliases
-					argumentArray = new String[1];
-					argumentArray[0] = argument;
-				} else { // Has aliases
-					var argumentAliases = argumentMap.get(argument);
-					argumentArray = new String[1 + argumentAliases.length];
-					argumentArray[0] = argument;
-					
-					for(int j = 1; j < argumentArray.length; j++) {
-						argumentArray[j] = argumentAliases[j - 1];
-					}
-				}
-			} else { // This argument doesn't exist
-				throw new RuntimeException("The argument " + argument + " doesn't exist.");
-			}
-			
-			argumentsWithAliases[i] = argumentArray;
+		if(commandArgumentMap.FindValue(arguments) != null) {
+			throw new RuntimeException("This argument path has already been filled.");
 		}
-		
-		for(String[] argumentAliasCombination : ArrayUtil.findCrossArrayStringCombinations(argumentsWithAliases)) {
-			commandArgumentMap.AddValue(argumentAliasCombination, action);
-		}
+
+		commandArgumentMap.AddValue(arguments, action);
 		
 		return this;
 	}
@@ -172,6 +148,7 @@ public class MultiCommand extends Command {
 	/**
 	 * Adds an argument that can take any value
 	 * 
+	 * 
 	 * @param argumentPosition The argument's position with 0 as the first argument
 	 * @return The changed MultiCommand
 	 */
@@ -179,13 +156,18 @@ public class MultiCommand extends Command {
 		if(isFinalized) {
 			throw new RuntimeException("This command has already been finalized.");
 		}
-
+		
+		// Ensure that the ArrayList has expanded enough to be able to have the map added
 		ArrayUtil.ensureArrayListSize(argumentList, argumentPosition + 1);
+		ArrayUtil.ensureArrayListSize(argumentAliasLookup, argumentPosition + 1);
 		var argumentMap = argumentList.get(argumentPosition);
+		var argumentAliasMap = argumentAliasLookup.get(argumentPosition);
 
-		if(argumentMap == null) {
-			argumentMap = new HashMap<String, String[]>();
-			argumentList.add(argumentPosition, argumentMap);
+		if(argumentMap == null && argumentAliasMap == null) {
+			argumentMap = new LinkedHashMap<String, String[]>();
+			argumentAliasMap = new HashMap<String, String>();
+			argumentList.set(argumentPosition, argumentMap);
+			argumentAliasLookup.set(argumentPosition, argumentAliasMap);
 		} else {
 			throw new RuntimeException("This argument was already declared.");
 		}
@@ -195,6 +177,7 @@ public class MultiCommand extends Command {
 	
 	/**
 	 * Adds an argument with no aliases
+	 * The order in which you add arguments is the order in which they appear in the help command
 	 * 
 	 * @param argumentPosition The argument's position with 0 as the first argument
 	 * @param baseArgument The base argument which will be displayed as the main one in the help command
@@ -206,6 +189,7 @@ public class MultiCommand extends Command {
 	
 	/**
 	 * Adds an argument with aliases
+	 * The order in which you add arguments is the order in which they appear in the help command
 	 * 
 	 * @param argumentPosition The argument's position with 0 as the first element
 	 * @param baseArgument The base argument which will be displayed as the main one in the help command
@@ -217,17 +201,31 @@ public class MultiCommand extends Command {
 			throw new RuntimeException("This command has already been finalized.");
 		}
 
+		// Ensure that the ArrayList has expanded enough to be able to have the map added
 		ArrayUtil.ensureArrayListSize(argumentList, argumentPosition + 1);
+		ArrayUtil.ensureArrayListSize(argumentAliasLookup, argumentPosition + 1);
 		var argumentMap = argumentList.get(argumentPosition);
+		var argumentAliasMap = argumentAliasLookup.get(argumentPosition);
 
-		if(argumentMap == null) {
-			argumentMap = new HashMap<String, String[]>();
-			argumentList.add(argumentPosition, argumentMap);
-		} else {
-			throw new RuntimeException("This argument was already declared.");
+		if(argumentMap == null && argumentAliasMap == null) {
+			argumentMap = new LinkedHashMap<String, String[]>();
+			argumentAliasMap = new HashMap<String, String>();
+			
+			argumentList.set(argumentPosition, argumentMap);
+			argumentAliasLookup.set(argumentPosition, argumentAliasMap);
+		} else if(argumentMap.containsKey(baseArgument)) {
+			throw new RuntimeException("This base argument has already been declared at this position.");
 		}
-
+		
 		argumentMap.put(baseArgument, aliases);
+		argumentAliasMap.put(baseArgument, baseArgument);
+		
+		if(aliases != null) {
+			for(int i = 0; i < aliases.length; i++) {
+				argumentAliasMap.put(aliases[i], baseArgument);
+			}
+		}
+		
 		
 		return this;
 	}
@@ -236,13 +234,15 @@ public class MultiCommand extends Command {
 	public void finalizeCommand() {
 		super.finalizeCommand(true);
 		
-		StringBuilder fullDescription = new StringBuilder(commandDescription.substring(3)); //Gets rid of the ```
+		final String description = getCommandDescription().substring(0, getCommandDescription().length() - 3); //Gets rid of the ```;
+		
+		StringBuilder fullDescription = new StringBuilder(description);
 
 		fullDescription.append("\n");
 		
 		for(int i = 0; i < argumentList.size(); i++) {
 			fullDescription.append("\nArgument #");
-			fullDescription.append(i);
+			fullDescription.append(i + 1);
 			fullDescription.append(": ");
 			
 			if(argumentDescriptions != null && argumentDescriptions.length > i) {
@@ -278,6 +278,7 @@ public class MultiCommand extends Command {
 		
 		fullDescription.append("```");
 		commandDescription = fullDescription.toString();
+		argumentList = null; //We don't need this anymore
 		isFinalized = true;
 	}
 	
@@ -285,30 +286,65 @@ public class MultiCommand extends Command {
 	 * Gives a message for invalid or no arguments
 	 */
 	public void giveInvalidArgumentMessage(MessageChannel channel) {
-		StringBuilder invalidArgumentMessage = new StringBuilder("Invalid or no arguments provided.\n```");
-		invalidArgumentMessage.append(commandDescription);
-		invalidArgumentMessage.append("```");
-		channel.sendMessage(invalidArgumentMessage);
+		StringBuilder invalidArgumentMessage = new StringBuilder("Invalid or no arguments provided.\n");
+		invalidArgumentMessage.append(getCommandDescription());
+		BotUtil.sendMessage(channel, invalidArgumentMessage);
 		commandCooldown.changeTotalCooldown(Constant.DEFAULT_COOLDOWN);
 	}
 
 	@Override
-	void onCommandCalled(String[] args, MessageChannel channel) {
+	void onCommandCalled(String[] args, MessageChannel channel, User user) {
 		if(args == null) {
 			if(baseAction == null) { // There was no base action specified, so this is invalid
 				giveInvalidArgumentMessage(channel);
-			} else {
+			} else if(commandCooldown.isCooldownOver(user)) {
 				baseAction.OnCommandRun(null, channel);
+				commandCooldown.changeTotalCooldown(normalCooldown);
 			}
+			
+			return;
 		}
 		
-		MultiCommandAction action = commandArgumentMap.FindValue(args);
-
+		var parsedArgs = convertAliasesToBaseArgumentsAndParse(args);
+		
+		MultiCommandAction action = commandArgumentMap.FindValue(parsedArgs);
+		
 		if(action == null) {
 			giveInvalidArgumentMessage(channel);
-		} else if (commandCooldown.isCooldownOver()) {
+		} else if(commandCooldown.isCooldownOver(user)) {
 			action.OnCommandRun(args, channel);
 			commandCooldown.changeTotalCooldown(normalCooldown);
 		}
+	}
+	
+	/**
+	 * Turns the aliases of an argument array into base arguments
+	 * Then it parses the arguments by making all variable arguments null in a copy of the args array.
+	 * 
+	 * @param args The arguments
+	 * @return The parsed arguments
+	 */
+	private String[] convertAliasesToBaseArgumentsAndParse(String[] args) {
+		String[] parsedArgs = null;
+		
+		for(int i = 0; i < args.length; i++) {
+			var aliasLookup = argumentAliasLookup.get(i);
+			// Is not a variable argument
+			if(!aliasLookup.isEmpty()) {
+				args[i] = aliasLookup.get(args[i]);
+			} else {
+				if(parsedArgs == null) {
+					parsedArgs = args.clone();
+				}
+				
+				parsedArgs[i] = null;
+			}
+		}
+		
+		if(parsedArgs == null) {
+			return args;
+		}
+		
+		return parsedArgs;
 	}
 }

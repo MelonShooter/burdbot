@@ -1,6 +1,7 @@
 package com.deliburd.bot.burdbot.commands;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 
 public class FinalCommand extends Command {
 	private FinalCommandAction commandAction;
@@ -18,7 +19,10 @@ public class FinalCommand extends Command {
 	}
 
 	@Override
-	void onCommandCalled(String[] args, MessageChannel channel) {
-		commandAction.OnCommandRun(channel);
+	void onCommandCalled(String[] args, MessageChannel channel, User user) {
+		if(commandCooldown.isCooldownOver(user)) {
+			commandAction.OnCommandRun(channel);
+			commandCooldown.resetCooldown(user);
+		}
 	}
 }

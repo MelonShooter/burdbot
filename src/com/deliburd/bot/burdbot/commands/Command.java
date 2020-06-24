@@ -6,6 +6,7 @@ import com.deliburd.bot.burdbot.Constant;
 import com.deliburd.bot.burdbot.util.Cooldown;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 
 public abstract class Command {
 	protected Cooldown commandCooldown;
@@ -79,19 +80,22 @@ public abstract class Command {
 		
 		description.append(Constant.COMMAND_PREFIX_WITH_SPACE);
 		description.append(getCommandNames().get(0));
-		description.append("\nAliases: ");
-
-		for(int i = 1; i < commandNames.size(); i++) {
-			description.append(Constant.COMMAND_PREFIX_WITH_SPACE);
-			description.append(commandNames.get(i));
-			
-			if(i != commandNames.size() - 1) {
-				description.append(",");
+		
+		if(commandNames.size() > 1) {
+			description.append("\nAliases: ");
+	
+			for(int i = 1; i < commandNames.size(); i++) {
+				description.append(Constant.COMMAND_PREFIX_WITH_SPACE);
+				description.append(commandNames.get(i));
+				
+				if(i != commandNames.size() - 1) {
+					description.append("; ");
+				}
 			}
 		}
 		
 		description.append("\nDescription: ");
-		description.append(commandDescription);
+		description.append(getShortCommandDescription());
 		description.append("\nCooldown: ");
 		description.append(cooldownTime);
 		description.append(" second");
@@ -123,14 +127,21 @@ public abstract class Command {
 	 * 
 	 * @param aliases The additional aliases
 	 */
-	protected void addCommandNames(String... aliases) {
+	public Command addCommandNames(String... aliases) {
 		if(isFinalized) {
 			throw new RuntimeException("This command has already been finalized.");
 		}
 		
 		for (int i = 0; i < aliases.length; i++) {
-			commandAliases.add(aliases[i]);
+			registerAlias(aliases[i]);
 		}
+		
+		return this;
+	}
+	
+	private void registerAlias(String alias) {
+		commandAliases.add(alias);
+		CommandManager.createAlias(this, alias);
 	}
 	
 	/** 
@@ -152,10 +163,19 @@ public abstract class Command {
 	}
 	
 	/**
+	 * Gets the command's base name
+	 * 
+	 * @return The command's base name
+	 */
+	public String getCommandName() {
+		return commandAliases.get(0);
+	}
+	
+	/**
 	 * Called when the command is run
 	 * 
 	 * @param args Arguments associated with the command, if any. Will be null if there are none.
 	 * @param messageChannel The channel that the message was posted in
 	 */
-	abstract void onCommandCalled(String[] args, MessageChannel messageChannel);
+	abstract void onCommandCalled(String[] args, MessageChannel messageChannel, User user);
 }

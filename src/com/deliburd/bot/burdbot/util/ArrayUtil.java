@@ -111,7 +111,7 @@ public class ArrayUtil {
 		}
 		
 
-		for(int i = listSize; i < newSize - 1; i++) {
+		for(int i = listSize; i < newSize; i++) {
 			arrayList.add(null);
 		}
 	}

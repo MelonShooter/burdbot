@@ -9,6 +9,7 @@ import javax.security.auth.login.LoginException;
 import com.deliburd.bot.burdbot.commands.CommandManager;
 import com.deliburd.bot.burdbot.commands.MultiCommand;
 import com.deliburd.bot.burdbot.commands.MultiCommandAction;
+import com.deliburd.bot.burdbot.util.BotUtil;
 import com.deliburd.readingpuller.ReadingManager;
 import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
@@ -18,24 +19,29 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 
+//TODO: IN MULTICOMMAND, CREATE A WAY TO SPECIFY MIN AMOUNT OF ARGUMENTS
+
 public class Main {
 	public static void main(String[] args)
     throws LoginException
     {
         //reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
+		//Call the below line if not reloading text, otherwise comment it out. 
+		ReadingManager.createTextFolderStructure();
         
 		MultiCommand fetchTextCommand = CommandManager.addCommand("fetchtext", Constant.FETCH_TEXT_DESCRIPTION)
 				.setDefaultAction(new MultiCommandAction() {
 					@Override
 					public void OnCommandRun(String[] args, MessageChannel channel) {
 						if (!ReadingManager.isRegeneratingTexts()) {
-							channel.sendMessage("```" + ReadingManager.fetchText(args[0], args[1]) + "```").queue();
+							BotUtil.sendMessage(channel, "```" + ReadingManager.fetchText(args[0], args[1]) + "```");
 						}
 					}
-				}).setArgumentDescriptions("The language of the text", "The difficulty of the text");
+				});
         
+		int firstTime = 0;
+		
         for(var language : ScraperLanguage.values()) {
-        	int firstTime = 0;
         	fetchTextCommand.addArgument(0, language.toString(), language.getAliases());
         	for(var difficulty : ScraperDifficulty.values()) {
         		if(firstTime < 2) {
@@ -47,9 +53,12 @@ public class Main {
         	}
         }
         
-        fetchTextCommand.setCooldown(10).finalizeCommand();
+		fetchTextCommand.setArgumentDescriptions("The language of the text", "The difficulty of the text")
+				.addCommandNames("fetchtxt", "ftxt", "ftext")
+				.setCooldown(10)
+				.finalizeCommand();
 
-        JDA jda = JDABuilder.createDefault(Constant.BOT_TOKEN_STRING).build();
+        JDA jda = JDABuilder.createDefault(Constant.BOT_TEST_TOKEN_STRING).build();
         jda.addEventListener(new CommandManager());
     }
     
