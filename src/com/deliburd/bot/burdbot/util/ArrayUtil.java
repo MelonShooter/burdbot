@@ -95,4 +95,24 @@ public class ArrayUtil {
 
 		return combinationArray;
 	}
+	
+	/**
+	 * Expands the arraylist's size by adding null until the Arraylist is at the specified size, if necessary.
+	 * Won't do anything if the ArrayList's size is more than or equal to the new size already.
+	 * 
+	 * @param <T> The type of values contained in the ArrayList
+	 * @param arrayList The ArrayList
+	 * @param newSize The new size
+	 */
+	public static <T> void ensureArrayListSize(ArrayList<T> arrayList, int newSize) {
+		final int listSize = arrayList.size();
+		if(newSize <= listSize) {
+			return;
+		}
+		
+
+		for(int i = listSize; i < newSize; i++) {
+			arrayList.add(null);
+		}
+	}
 }

@@ -1,99 +1,82 @@
 package com.deliburd.bot.burdbot;
 
-import java.time.Instant;
+import java.util.ConcurrentModificationException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.security.auth.login.LoginException;
 
 import com.deliburd.bot.burdbot.commands.CommandManager;
+import com.deliburd.bot.burdbot.commands.MultiCommand;
+import com.deliburd.bot.burdbot.commands.MultiCommandAction;
+import com.deliburd.bot.burdbot.util.BotUtil;
 import com.deliburd.readingpuller.ReadingManager;
 import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
-import com.deliburd.readingpuller.TextConstant;
+import com.deliburd.util.ErrorLogger;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class Main extends ListenerAdapter {
-	private static long lastCreateTime = 0;
-	private static long lastFetchTime = 0;
-	private static volatile int isFetching = 0;
-	private static final int LINK_PULL_COOLDOWN = 86400; //1 day in seconds
-	private static final int FETCH_COOLDOWN = 10; //1 day in seconds
-
-    public static void main(String[] args)
+public class Main {
+	public static void main(String[] args)
     throws LoginException
     {
-    	System.out.println(TextConstant.WORKING_DIRECTORY);
-        CommandManager.addCommand("f", "aah");
+        //reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
+		//Call the below line if not reloading text, otherwise comment it out. 
+		ReadingManager.createTextFolderStructure();
+        
+		MultiCommand fetchTextCommand = CommandManager.addCommand("fetchtext", Constant.FETCH_TEXT_DESCRIPTION)
+				.setMinArguments(2)
+				.setDefaultAction(new MultiCommandAction() {
+					@Override
+					public void OnCommandRun(String[] args, MessageChannel channel) {
+						if (!ReadingManager.isRegeneratingTexts()) {
+							BotUtil.sendMessage(channel, "```" + ReadingManager.fetchText(args[0], args[1]) + "```");
+						}
+					}
+				});
+        
+		int firstTime = 0;
+		
+        for(var language : ScraperLanguage.values()) {
+        	fetchTextCommand.addArgument(0, language.toString(), language.getAliases());
+        	for(var difficulty : ScraperDifficulty.values()) {
+        		if(firstTime < 2) {
+        			fetchTextCommand.addArgument(1, difficulty.toString(), difficulty.getAliases());
+        			firstTime++;
+        		}
+
+        		fetchTextCommand = fetchTextCommand.addFinalArgumentPath(language.toString(), difficulty.toString());
+        	}
+        }
+        
+		fetchTextCommand.setArgumentDescriptions("The language of the text", "The difficulty of the text")
+				.addCommandNames("fetchtxt", "ftxt", "ftext")
+				.setCooldown(10)
+				.finalizeCommand();
 
         JDA jda = JDABuilder.createDefault(Constant.BOT_TOKEN_STRING).build();
-        jda.addEventListener(new CommandManager(), new Main());
+        jda.addEventListener(new CommandManager());
     }
     
-    @Override
-    public void onMessageReceived(MessageReceivedEvent event)
-    {
-        if (event.isFromType(ChannelType.TEXT))
-        {
-        	String message = event.getMessage().getContentDisplay();
-        	MessageChannel channel = event.getChannel();
-        	
-        	if(message.length() < 4) {
-        		if(message.equals(".sl")) {
-            		channel.sendMessage("To start a sesión, type .sl rltxt then .sl en/es e/m to get a text.").queue();
-            	}
-        		
-        		return;
-        	}
-        	
-            if (message.substring(0, 4).equals(".sl ")) {
-            	if(message.equals(".sl rltxt")) {
-        			var currentTime = Instant.now().getEpochSecond();
-
-        			if (lastCreateTime + LINK_PULL_COOLDOWN <= currentTime) { // Cooldown is over
-        				isFetching = 1;
-        				channel.sendMessage("Reloading texts! This can take a while.").queue();
-        				ReadingManager.regenerateTexts();
-        				channel.sendMessage("Done fetching texts!").queue();
-        				isFetching = 2;
-        				lastCreateTime = currentTime;
-        			} else {
-        				channel.sendMessage("Texts already loaded!").queue();
-        			}
-
-            		return;
-            	}
-            	
-            	var messageArgs = message.split(" ");
-            	
-            	if(messageArgs.length != 3) {
-            		return;
-            	}
-            	
-            	if(messageArgs[1].equals(ScraperLanguage.English.toString()) || messageArgs[1].equals(ScraperLanguage.Spanish.toString())) {
-            		if(messageArgs[2].equals(ScraperDifficulty.Easy.toString()) || messageArgs[2].equals(ScraperDifficulty.Medium.toString())) {
-                		if(isFetching == 0) {
-                			channel.sendMessage("Reload the texts first by typing .sl rltxt").queue();
-                		}
-
-                		if(isFetching < 2) {
-                			return;
-                		}
-                		
-                		var currentTime = Instant.now().getEpochSecond();
-                		
-            			if (lastFetchTime + FETCH_COOLDOWN <= currentTime) { // Cooldown is over
-            				lastFetchTime = currentTime;
-            				channel.sendMessage("```" + ReadingManager.fetchText(messageArgs[1], messageArgs[2]) + "```").queue();
-            			}
-            			
-            		}
-            	}
-            }
-        }
-    }
+    /**
+     * Reloads texts on startup and daily
+     * 
+     * @param interval The interval to reload texts in seconds
+     */
+    private static void reloadTexts(int interval) {
+		Timer reloadTextsTimer = new Timer();
+		reloadTextsTimer.scheduleAtFixedRate(new TimerTask() {
+			@Override
+			public void run() {
+				try {
+					ReadingManager.regenerateTexts();
+				} catch(ConcurrentModificationException e) {
+					ErrorLogger.LogException(e);
+				}
+			}
+		}, 0, interval * 1000);
+	}
 }

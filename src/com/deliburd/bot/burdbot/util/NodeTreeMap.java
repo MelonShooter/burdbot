@@ -36,9 +36,13 @@ public class NodeTreeMap<K, V> {
 			currentNode = currentNode.getChildNode(keys[i]);
 		}
 		
+		if(currentNode == null) {
+			return null;
+		}
+		
 		V nodeValue = currentNode.getNodeValue();
 		
-		if(currentNode == null || nodeValue == null) {
+		if(nodeValue == null) {
 			return null;
 		} else {
 			return nodeValue;

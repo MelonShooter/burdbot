@@ -1,6 +1,11 @@
 package com.deliburd.bot.burdbot.util;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import net.dv8tion.jda.api.entities.User;
 
 public class Cooldown {
 	/**
@@ -8,10 +13,7 @@ public class Cooldown {
 	 */
 	private long cooldown;
 	
-	/**
-	 * The time since the epoch when the cooldown was last reset
-	 */
-	private long lastAction;
+	private HashMap<User, Long> userCooldownTimeTracker;
 
 	/**
 	 * Initializes the cooldown
@@ -20,13 +22,35 @@ public class Cooldown {
 	 */
 	public Cooldown(long cooldown) {
 		this.cooldown = cooldown;
+		userCooldownTimeTracker = new HashMap<User, Long>(11);
 	}
 
 	/**
-	 * Resets the cooldown
+	 * Resets the cooldown for a user
 	 */
-	public void ResetCooldown() {
-		lastAction = Instant.now().toEpochMilli();
+	public void resetCooldown(User user) {
+		final long currentmilliSecond = Instant.now().toEpochMilli();
+
+		userCooldownTimeTracker.put(user, currentmilliSecond);
+
+		if(userCooldownTimeTracker.size() == 11) {
+			pruneUserCooldown();
+		}
+	}
+
+	/**
+	 * Goes through the user cooldown hashmap and takes out mappings that are outdated
+	 */
+	private void pruneUserCooldown() {
+		var entries = userCooldownTimeTracker.entrySet().iterator();
+
+		while(entries.hasNext()) {
+			var entry = entries.next();
+			
+			if(isCooldownOver(entry.getKey())) {
+				entries.remove();
+			}
+		}
 	}
 
 	/**
@@ -34,7 +58,7 @@ public class Cooldown {
 	 * 
 	 * @return The current cooldown
 	 */
-	public long GetTotalCooldown() {
+	public long getTotalCooldown() {
 		return cooldown;
 	}
 	
@@ -43,31 +67,32 @@ public class Cooldown {
 	 * 
 	 * @param newCooldown The new cooldown
 	 */
-	public void ChangeTotalCooldown(long newCooldown) {
+	public void changeTotalCooldown(long newCooldown) {
 		cooldown = newCooldown;
 	}
 	
 	/**
-	 * Checks if the cooldown is over
+	 * Checks if the cooldown is over for a user
 	 * 
 	 * @return Whether the cooldown is up
 	 */
-	public boolean IsCooldownOver() {
-		return GetCooldownTimeRemaining() == 0;
+	public boolean isCooldownOver(User user) {
+		return getCooldownTimeRemaining(user) == 0;
 	}
 	
 	/**
-	 * Gets the amount of time remaining in the cooldown.
+	 * Gets the amount of time remaining in the cooldown for a user
 	 * 
-	 * @return The time remaining in the cooldown in milliseconds. Returns 0 if the cooldown is over.
+	 * @return The time remaining in the cooldown in milliseconds. Returns 0 if the cooldown is over or the user never had a cooldown.
 	 */
-	public long GetCooldownTimeRemaining() {
-		long timeRemaining = lastAction + cooldown - Instant.now().toEpochMilli();
+	public long getCooldownTimeRemaining(User user) {
+		final Long lastAction = userCooldownTimeTracker.get(user);
 		
-		if(timeRemaining > 0) {
-			return timeRemaining;
-		} else {
+		// Never had a cooldown or cooldown is over
+		if(lastAction == null || lastAction + cooldown * 1000 <= Instant.now().toEpochMilli()) {
 			return 0;
+		} else {
+			return lastAction + cooldown * 1000 - Instant.now().toEpochMilli();
 		}
 	}
 }
