@@ -4,6 +4,6 @@
 # Ignore Gradle build output directory
 build
 
-src/com/deliburd/bot/burdbot/Constant.java
+src/com/deliburd/bot/burdbot/BotConstant.java
 sesion_bot_data
 doc

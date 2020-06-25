@@ -57,7 +57,7 @@ public class Main {
 				.setCooldown(10)
 				.finalizeCommand();
 
-        JDA jda = JDABuilder.createDefault(Constant.BOT_TEST_TOKEN_STRING).build();
+        JDA jda = JDABuilder.createDefault(BotConstant.BOT_TEST_TOKEN_STRING).build();
         jda.addEventListener(new CommandManager());
     }
     
