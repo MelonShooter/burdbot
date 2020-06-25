@@ -3,7 +3,7 @@ package com.deliburd.bot.burdbot.commands;
 import java.util.ArrayList;
 
 import com.deliburd.bot.burdbot.Constant;
-import com.deliburd.bot.burdbot.util.Cooldown;
+import com.deliburd.util.Cooldown;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;

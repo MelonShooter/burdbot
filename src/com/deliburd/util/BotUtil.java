@@ -1,4 +1,4 @@
-package com.deliburd.bot.burdbot.util;
+package com.deliburd.util;
 
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.ChannelType;
@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 public class BotUtil {
+	private BotUtil() {}
 	/**
 	 * Checks if the bot has write permissions
 	 * 
