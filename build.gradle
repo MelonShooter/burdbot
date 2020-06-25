@@ -14,7 +14,7 @@ plugins {
 
 mainClassName = 'com.deliburd.bot.burdbot.Main'
 
-version = '2.0-test'
+version = '2.1-test'
 
 sourceSets {
 	main.java.srcDirs = ['src']
@@ -27,6 +27,9 @@ repositories {
 }
 
 dependencies {
-  implementation 'net.dv8tion:JDA:4.1.1_165'
-  implementation project(':ExcerptScraper')
+  implementation ('net.dv8tion:JDA:4.1.1_165') {
+  	exclude module: 'opus-java'
+  }
+  
+  implementation 'org.jsoup:jsoup:1.13.1'
 }

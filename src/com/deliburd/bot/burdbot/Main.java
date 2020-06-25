@@ -9,10 +9,10 @@ import javax.security.auth.login.LoginException;
 import com.deliburd.bot.burdbot.commands.CommandManager;
 import com.deliburd.bot.burdbot.commands.MultiCommand;
 import com.deliburd.bot.burdbot.commands.MultiCommandAction;
-import com.deliburd.bot.burdbot.util.BotUtil;
 import com.deliburd.readingpuller.ReadingManager;
 import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
+import com.deliburd.util.BotUtil;
 import com.deliburd.util.ErrorLogger;
 
 import net.dv8tion.jda.api.JDA;

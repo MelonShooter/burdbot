@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import com.deliburd.bot.burdbot.Constant;
-import com.deliburd.bot.burdbot.util.BotUtil;
-import com.deliburd.bot.burdbot.util.Cooldown;
+import com.deliburd.util.BotUtil;
+import com.deliburd.util.Cooldown;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;

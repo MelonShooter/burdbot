@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 import com.deliburd.bot.burdbot.Constant;
-import com.deliburd.bot.burdbot.util.ArrayUtil;
-import com.deliburd.bot.burdbot.util.BotUtil;
-import com.deliburd.bot.burdbot.util.NodeTreeMap;
+import com.deliburd.util.ArrayUtil;
+import com.deliburd.util.BotUtil;
+import com.deliburd.util.NodeTreeMap;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;

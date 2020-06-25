@@ -8,6 +8,3 @@
  */
 
 rootProject.name = 'BurdBot'
-
-include ':ExcerptScraper'
-project(':ExcerptScraper').projectDir = new File(settingsDir, '../ExcerptScraper')
