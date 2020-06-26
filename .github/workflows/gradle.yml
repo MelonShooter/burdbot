@@ -22,10 +22,7 @@ jobs:
         with:
           java-version: 1.11
       - name: Sanitize the bot's token
-        run: |
-          stty -echo
-          sed -i "s/BotConstant.BOT_TOKEN_STRING/\"${{ secrets.BOT_TOKEN }}\"/" src/com/deliburd/bot/burdbot/Main.java
-          stty echo
+        run: sed -i "s/BotConstant.BOT_TOKEN_STRING/\"${{ secrets.BOT_TOKEN }}\"/" src/com/deliburd/bot/burdbot/Main.java
       - name: Cache Gradle packages
         uses: actions/cache@v2
         with:
@@ -52,7 +49,4 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_COMMAND_KEY }}
           passphrase: ${{ secrets.SSH_COMMAND_PASSPHRASE }}
-          script: |
-            stty -echo
-            pkill burdbot.sh
-            stty echo
+          script: pkill burdbot.sh
