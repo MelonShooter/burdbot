@@ -23,9 +23,9 @@ public class Main {
 	public static void main(String[] args)
     throws LoginException
     {
-        //reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
+        reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
 		//Call the below line if not reloading text, otherwise comment it out. 
-		ReadingManager.createTextFolderStructure();
+		//ReadingManager.createTextFolderStructure();
         
 		MultiCommand fetchTextCommand = CommandManager.addCommand("fetchtext", Constant.FETCH_TEXT_DESCRIPTION)
 				.setMinArguments(2)
