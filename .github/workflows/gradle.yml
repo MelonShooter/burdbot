@@ -34,15 +34,15 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
       - name: Upload jar to VPS
-        working-directory: $GITHUB_WORKSPACE/build/libs
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_FTP_KEY }}
           passphrase: ${{ secrets.SSH_FTP_PASSPHRASE }}
-          source: "*-all.jar"
+          source: "build/libs/*-all.jar"
           target: "burdbot"
+          strip_components: 2
       - name: Restart BurdBot
         uses: appleboy/ssh-action@master
         with:
