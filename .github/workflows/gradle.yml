@@ -21,7 +21,10 @@ jobs:
         with:
           java-version: 1.11
       - name: Sanitize the bot's token
-        run: sed -i "s/BotConstant.BOT_TOKEN_STRING/\"${{ secrets.BOT_TOKEN }}\"/" src/com/deliburd/bot/burdbot/Main.java
+        run: |
+        stty -echo
+        sed -i "s/BotConstant.BOT_TOKEN_STRING/\"${{ secrets.BOT_TOKEN }}\"/" src/com/deliburd/bot/burdbot/Main.java
+        stty echo
       - name: Cache Gradle packages
         uses: actions/cache@v2
         with:
@@ -32,3 +35,23 @@ jobs:
         run: chmod +x gradlew
       - name: Build with Gradle
         run: ./gradlew build
+      - name: Upload jar to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_FTP_KEY }}
+          passphrase: ${{ secrets.SSH_FTP_PASSPHRASE }}
+          source: "build/libs/*-all.jar"
+          target: "burdbot"
+      - name: Restart BurdBot
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_COMMAND_KEY }}
+          passphrase: ${{ secrets.SSH_COMMAND_PASSPHRASE }}
+          script: |
+          stty -echo
+          pkill burdbot.sh
+          stty echo
