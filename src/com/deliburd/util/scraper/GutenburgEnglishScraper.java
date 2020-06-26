@@ -10,7 +10,7 @@ import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
 import com.deliburd.util.ArrayUtil;
 import com.deliburd.util.ErrorLogger;
-import com.deliburd.util.scraper.ScraperFactory.ScraperType;
+import com.deliburd.util.scraper.ScraperManager.ScraperType;
 
 public class GutenburgEnglishScraper implements Scraper {
 	private static ArrayList<File> gutenburgFiles = new ArrayList<File>();

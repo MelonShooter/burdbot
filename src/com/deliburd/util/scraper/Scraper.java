@@ -4,7 +4,7 @@ import java.util.concurrent.ExecutionException;
 
 import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
-import com.deliburd.util.scraper.ScraperFactory.ScraperType;
+import com.deliburd.util.scraper.ScraperManager.ScraperType;
 
 public interface Scraper {
 	public abstract String getRandomTextBody() throws Exception;

@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutionException;
 import com.deliburd.util.AdvancedTextReader;
 import com.deliburd.util.ErrorLogger;
 import com.deliburd.util.FileUtil;
-import com.deliburd.util.scraper.ScraperFactory;
+import com.deliburd.util.scraper.ScraperManager;
 
 public class ReadingManager {
 	public enum ScraperLanguage {
@@ -125,7 +125,7 @@ public class ReadingManager {
 	}
 
 	private static boolean scrapeAllSources() {
-		var scrapers = ScraperFactory.getAllScrapers();
+		var scrapers = ScraperManager.getAllScrapers();
 		
 		for(var scraper : scrapers) {
 			try {

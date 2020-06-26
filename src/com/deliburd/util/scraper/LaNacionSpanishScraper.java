@@ -21,7 +21,7 @@ import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
 import com.deliburd.util.ArrayUtil;
 import com.deliburd.util.ErrorLogger;
-import com.deliburd.util.scraper.ScraperFactory.ScraperType;
+import com.deliburd.util.scraper.ScraperManager.ScraperType;
 
 public class LaNacionSpanishScraper implements Scraper {
 	private static final String LA_NACION_LINK_PAGE = "https://www.lanacion.com.ar/cultura";

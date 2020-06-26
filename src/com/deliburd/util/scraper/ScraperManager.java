@@ -3,7 +3,7 @@ package com.deliburd.util.scraper;
 import java.util.Collection;
 import java.util.EnumMap;
 
-public class ScraperFactory {
+public class ScraperManager {
 	public enum ScraperType {
 		Gutenburg,
 		LaNacion,
@@ -20,7 +20,7 @@ public class ScraperFactory {
 		scraperMap.put(ScraperType.Papelucho, new PapeluchoScraper());
 	}
 	
-	private ScraperFactory() {}
+	private ScraperManager() {}
 	
 	public static Scraper getScraper(ScraperType scraper) {
 		return scraperMap.get(scraper);

@@ -38,18 +38,20 @@ public class Main {
 					}
 				});
         
-		int firstTime = 0;
+		boolean firstTime = true;
 		
         for(var language : ScraperLanguage.values()) {
         	fetchTextCommand.addArgument(0, language.toString(), language.getAliases());
+        	
         	for(var difficulty : ScraperDifficulty.values()) {
-        		if(firstTime < 2) {
+        		if(firstTime) {
         			fetchTextCommand.addArgument(1, difficulty.toString(), difficulty.getAliases());
-        			firstTime++;
         		}
 
         		fetchTextCommand = fetchTextCommand.addFinalArgumentPath(language.toString(), difficulty.toString());
         	}
+        	
+        	firstTime = false;
         }
         
 		fetchTextCommand.setArgumentDescriptions("The language of the text", "The difficulty of the text")
