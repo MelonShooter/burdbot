@@ -22,9 +22,9 @@ jobs:
           java-version: 1.11
       - name: Sanitize the bot's token
         run: |
-        stty -echo
-        sed -i "s/BotConstant.BOT_TOKEN_STRING/\"${{ secrets.BOT_TOKEN }}\"/" src/com/deliburd/bot/burdbot/Main.java
-        stty echo
+          stty -echo
+          sed -i "s/BotConstant.BOT_TOKEN_STRING/\"${{ secrets.BOT_TOKEN }}\"/" src/com/deliburd/bot/burdbot/Main.java
+          stty echo
       - name: Cache Gradle packages
         uses: actions/cache@v2
         with:
