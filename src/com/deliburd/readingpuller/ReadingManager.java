@@ -16,8 +16,8 @@ import com.deliburd.util.scraper.ScraperFactory;
 
 public class ReadingManager {
 	public enum ScraperLanguage {
-		English ("english", new String[] {"eng", "en", "inglés"}), 
-		Spanish ("spanish", new String[] {"sp", "español", "esp", "es"});
+		English ("english", new String[] {"eng", "en", "inglÃ©s"}), 
+		Spanish ("spanish", new String[] {"sp", "espaÃ±ol", "esp", "es"});
 
 		private String language;
 		private String[] aliases;
@@ -37,9 +37,9 @@ public class ReadingManager {
 	}
 	
 	public enum ScraperDifficulty {
-		Easy ("easy", new String[] {"e", "fácil", "f"}), 
+		Easy ("easy", new String[] {"e", "fÃ¡cil", "f"}), 
 		Medium ("medium", new String[] {"m", "intermedio", "i"});//,
-		// Hard ("hard", new String[] {"h", "difícil", "d"});
+		// Hard ("hard", new String[] {"h", "difÃ­cil", "d"});
 
 		private String difficulty;
 		private String[] aliases;
