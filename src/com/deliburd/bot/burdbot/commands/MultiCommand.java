@@ -127,7 +127,6 @@ public class MultiCommand extends Command {
 	 * @param action The action to run when the given set of arguments is typed
 	 * @param arguments The series of arguments to which the action is linked.
 	 * @return The changed Multicommand
-	 * @throws 
 	 */
 	public MultiCommand addFinalArgumentPath(MultiCommandAction action, String... arguments) {
 		if(isFinalized) {
@@ -312,6 +311,8 @@ public class MultiCommand extends Command {
 	
 	/**
 	 * Gives a message for invalid or no arguments
+	 * 
+	 * @param channel The channel to give the message in
 	 */
 	public void giveInvalidArgumentMessage(MessageChannel channel) {
 		StringBuilder invalidArgumentMessage = new StringBuilder("Invalid or no arguments provided.\n");

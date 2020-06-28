@@ -27,7 +27,8 @@ public interface Scraper {
 
 	/**
 	 * Returns the language that the scraper gives texts in
-	 * @return
+	 * 
+	 * @return The language the text is in
 	 */
 	public abstract ScraperLanguage getLanguage();
 	
@@ -40,6 +41,7 @@ public interface Scraper {
 	
 	/**
 	 * Gets the title of the text
+	 * 
 	 * @return The title of the scraper
 	 */
 	public abstract String getTitle();

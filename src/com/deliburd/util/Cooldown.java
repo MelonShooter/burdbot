@@ -24,6 +24,8 @@ public class Cooldown {
 
 	/**
 	 * Resets the cooldown for a user
+	 * 
+	 * @param user The user to reset the cooldown for
 	 */
 	public void resetCooldown(User user) {
 		final long currentmilliSecond = Instant.now().toEpochMilli();
@@ -71,6 +73,7 @@ public class Cooldown {
 	/**
 	 * Checks if the cooldown is over for a user
 	 * 
+	 * @param user The user to check
 	 * @return Whether the cooldown is up
 	 */
 	public boolean isCooldownOver(User user) {
@@ -80,6 +83,7 @@ public class Cooldown {
 	/**
 	 * Gets the amount of time remaining in the cooldown for a user
 	 * 
+	 * @param user The user to check
 	 * @return The time remaining in the cooldown in milliseconds. Returns 0 if the cooldown is over or the user never had a cooldown.
 	 */
 	public long getCooldownTimeRemaining(User user) {
