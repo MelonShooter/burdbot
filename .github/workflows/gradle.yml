@@ -23,8 +23,6 @@ jobs:
           java-version: 1.11
       - name: Sanitize the bot's token
         run: sed -i "s/BotConstant.BOT_TOKEN_STRING/args[0]/" src/com/deliburd/bot/burdbot/Main.java
-      - name: Rename the jar
-        run: mv $(ls -1 build/libs | grep all\.jar) $(ls -1 build/libs | grep all\.jar | sed 's/.*\(-all.jar\)/$GITHUB_SHA\1/')
       - name: Cache Gradle packages
         uses: actions/cache@v2
         with:
@@ -35,6 +33,8 @@ jobs:
         run: chmod +x gradlew
       - name: Build with Gradle
         run: ./gradlew build
+      - name: Rename the jar
+        run: mv $(ls -1 build/libs | grep all\.jar) $(ls -1 build/libs | grep all\.jar | sed 's/.*\(-all.jar\)/$GITHUB_SHA\1/')
       - name: Upload jar to VPS
         env:
           USRNAME: ${{ secrets.SFTP_USERNAME }}
