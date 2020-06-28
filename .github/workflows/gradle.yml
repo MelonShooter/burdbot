@@ -22,7 +22,9 @@ jobs:
         with:
           java-version: 1.11
       - name: Sanitize the bot's token
-        run: sed -i "s/BotConstant.BOT_TOKEN_STRING/\"${{ secrets.BOT_TOKEN }}\"/" src/com/deliburd/bot/burdbot/Main.java
+        run: sed -i "s/BotConstant.BOT_TOKEN_STRING/args[0]/" src/com/deliburd/bot/burdbot/Main.java
+      - name: Rename the jar
+        run: mv $(ls -1 build/libs | grep all\.jar) $(ls -1 build/libs | grep all\.jar | sed 's/.*\(-all.jar\)/$GITHUB_SHA\1/')
       - name: Cache Gradle packages
         uses: actions/cache@v2
         with:
@@ -34,20 +36,19 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
       - name: Upload jar to VPS
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_FTP_KEY }}
-          passphrase: ${{ secrets.SSH_FTP_PASSPHRASE }}
-          source: "build/libs/*-all.jar"
-          target: "burdbot"
-          strip_components: 2
+        env:
+          USRNAME: ${{ secrets.SFTP_USERNAME }}
+          HOST: ${{ secrets.SFTP_HOST }}
+          PWD: ${{ secrets.SFTP_PWD }}
+        run: |
+          sftp "$USRNAME@$HOST"
+          $PWD
+          yes
+          put $GITHUB_SHA-all.jar
+          bye
       - name: Restart BurdBot
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_COMMAND_KEY }}
-          passphrase: ${{ secrets.SSH_COMMAND_PASSPHRASE }}
-          script: pkill burdbot.sh
+        env:
+          ID: ${{ secrets.SERVER_ID }}
+          API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+        run: |
+          curl "https://gamepanel.eggzr.com/api/client/servers/$ID/power" -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" -H "Accept: Application/vnd.pterodactyl.v1+json" -X POST -d '{ "signal": "restart" }'
