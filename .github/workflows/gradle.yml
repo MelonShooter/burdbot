@@ -33,20 +33,19 @@ jobs:
         run: chmod +x gradlew
       - name: Build with Gradle
         run: ./gradlew build
-      - name: Rename the jar
-        run: mv build/libs/$(ls -1 build/libs | grep all\.jar) build/libs/$(ls -1 build/libs | grep all\.jar | sed 's/.*\(-all.jar\)/GITHUB_SHA\1/')
-      - name: Upload jar to VPS
-        env:
-          USRNAME: ${{ secrets.SFTP_USERNAME }}
-          HOST: ${{ secrets.SFTP_HOST }}
-          PWD: ${{ secrets.SFTP_PWD }}
-          PORT: ${{ secrets.SFTP_PORT }}
+      - name: Rename the shadowjar and remove other jar
         run: |
-          sftp -oPort=$PORT "$USRNAME@$HOST"
-          yes
-          $PWD
-          put $GITHUB_SHA-all.jar
-          bye
+          rm build/libs/$(ls -1 build/libs | grep -P '(?<!all)\.jar')
+          mv build/libs/$(ls -1 build/libs) build/libs/$(ls -1 build/libs | sed "s/.*\(-all.jar\)/$GITHUB_SHA\1/")
+      - name: Upload jar to VPS
+        uses: SamKirkland/FTP-Deploy-Action@2.0.0
+        env:
+          FTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          FTP_SERVER: ${{ secrets.SFTP_HOST }}
+          FTP_PASSWORD: ${{ secrets.SFTP_PWD }}
+          PORT: ${{ secrets.SFTP_PORT }}
+          LOCAL_DIR: build/libs
+          METHOD: sftp
       - name: Restart BurdBot
         env:
           ID: ${{ secrets.SERVER_ID }}
