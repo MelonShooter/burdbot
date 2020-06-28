@@ -40,10 +40,11 @@ jobs:
           USRNAME: ${{ secrets.SFTP_USERNAME }}
           HOST: ${{ secrets.SFTP_HOST }}
           PWD: ${{ secrets.SFTP_PWD }}
+          PORT: ${{ secrets.SFTP_PORT }}
         run: |
-          sftp "$USRNAME@$HOST"
-          $PWD
+          sftp -oPort=$PORT "$USRNAME@$HOST"
           yes
+          $PWD
           put $GITHUB_SHA-all.jar
           bye
       - name: Restart BurdBot
