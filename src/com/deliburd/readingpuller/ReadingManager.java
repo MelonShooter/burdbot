@@ -1,5 +1,6 @@
 package com.deliburd.readingpuller;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -7,7 +8,6 @@ import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
 
 import com.deliburd.util.AdvancedTextReader;
 import com.deliburd.util.ErrorLogger;
@@ -67,7 +67,10 @@ public class ReadingManager {
 		readingManifest = new HashMap<String, HashMap<String, AdvancedTextReader>>(2);
 	}
 
-	public static void createTextFolderStructure() {
+	/**
+	 * Creates the folder structure for texts
+	 */
+	private static void createTextFolderStructure() {
 		File textDirectory = null;
 
 		for (int i = 0; i < languages.length; i++) {
@@ -90,20 +93,37 @@ public class ReadingManager {
 		}
 	}
 	
+	/**
+	 * Fetches a text based on language and difficulty
+	 * 
+	 * @param language The language of the text
+	 * @param difficulty The difficulty of the text
+	 * @return The text
+	 */
 	public static String fetchText(ScraperLanguage language, ScraperDifficulty difficulty) {
 		AdvancedTextReader textReader = readingManifest.get(language.toString()).get(difficulty.toString());
 		textReader.splitFileTextSentences();
 
-		return textReader.getNextExcerptInSentences(TextConstant.CHARACTER_TEXT_COUNT);
+		return textReader.getNextExcerptInSentences(TextConstant.APRROXIMATE_CHARACTER_TEXT_COUNT);
 	}
 	
+	/**
+	 * Fetches a text based on language and difficulty
+	 * 
+	 * @param language The language of the text
+	 * @param difficulty The difficulty of the text
+	 * @return The text
+	 */
 	public static String fetchText(String language, String difficulty) {
 		AdvancedTextReader textReader = readingManifest.get(language).get(difficulty);
 		textReader.splitFileTextSentences();
 
-		return textReader.getNextExcerptInSentences(TextConstant.CHARACTER_TEXT_COUNT);
+		return textReader.getNextExcerptInSentences(TextConstant.APRROXIMATE_CHARACTER_TEXT_COUNT);
 	}
 
+	/**
+	 * Regenerates the texts locally
+	 */
 	public static void regenerateTexts() {
 		if(isRegenerating) {
 			throw new ConcurrentModificationException("The texts are already being regenerated.");
@@ -120,12 +140,23 @@ public class ReadingManager {
 		isRegenerating = false;
 	}
 	
+	/**
+	 * Returns if the texts are currently being regenerated
+	 * 
+	 * @return Whether the texts are being regenerated
+	 */
 	public static boolean isRegeneratingTexts() {
 		return isRegenerating;
 	}
 
+	/**
+	 * Scrapes texts from all sources
+	 * 
+	 * @return Whether the scraper was successful
+	 */
 	private static boolean scrapeAllSources() {
 		var scrapers = ScraperManager.getAllScrapers();
+		BufferedWriter fileWriter = null;
 		
 		for(var scraper : scrapers) {
 			try {
@@ -139,24 +170,40 @@ public class ReadingManager {
 				
 				var textFile = new File(filePathString.toString() + "text.txt");
 				textFile.createNewFile();
-				var textFileWriter = new FileWriter(textFile, Charset.forName("UTF-8"), true);
+				fileWriter = new BufferedWriter(new FileWriter(textFile, Charset.forName("UTF-8"), true));
 				
-				for(String string : scraper.getRandomTextBodies(scraper.getRecommendedTextCount())) {	
-					textFileWriter.write(string);
-					textFileWriter.write(' ');
+				for(String text : scraper.getRandomTextBodies(scraper.getRecommendedTextCount())) {
+					if(text == null) {
+						fileWriter.close();
+						return false;
+					}
+					
+					fileWriter.write(text);
+					fileWriter.write(' ');
 				}
 				
-				textFileWriter.close();
-			} catch (ExecutionException e) {
-				ErrorLogger.LogException(e.getCause());
-			} catch (Exception e) {
+				fileWriter.close();
+			} catch (IOException e) {
 				ErrorLogger.LogException(e);
+				
+				if (fileWriter != null) {
+					try {
+						fileWriter.close();
+					} catch (IOException e1) {
+						ErrorLogger.LogException(e);
+					}
+				}
+
+				return false;
 			}
 		}
 
 		return true;
 	}
 
+	/**
+	 * Empties out the text folder
+	 */
 	private static void deleteTexts() {
 		File textDirectory = new File(TextConstant.TEXT_FOLDER);
 		FileUtil.emptyFolder(textDirectory);

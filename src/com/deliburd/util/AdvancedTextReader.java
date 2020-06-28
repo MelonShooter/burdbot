@@ -11,10 +11,17 @@ public class AdvancedTextReader {
 	private int fileLength;
 	private int filePosition = 0;
 	
+	/**
+	 * Creates a way to read texts
+	 * @param file The file to read
+	 */
 	public AdvancedTextReader(File file) {
 		this.file = file;
 	}
 	
+	/**
+	 * Splits the file's text into sentences
+	 */
 	public void splitFileTextSentences() {
 		if(!file.exists()) {
 			throw new UncheckedIOException("File doesn't exist yet.", new IOException());
@@ -34,6 +41,12 @@ public class AdvancedTextReader {
 		fileSentences = fileText.split("(?<!Mr\\.|Dr\\.|Mrs\\.|Ms\\.|\\..\\.)(?<=\\?|!|\\.) "); //To add a new abbreviation, type |abbrev\\. in the neg lookbehind
 	}
 	
+	/**
+	 * Gets the next excerpt given an approximate character count
+	 * 
+	 * @param approximateCharacterCount The approximate character count
+	 * @return The next excerpt
+	 */
 	public String getNextExcerptInSentences(int approximateCharacterCount) {
 		if(fileSentences == null) {
 			return null;

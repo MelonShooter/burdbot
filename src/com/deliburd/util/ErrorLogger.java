@@ -11,6 +11,11 @@ import com.deliburd.readingpuller.TextConstant;
 public class ErrorLogger {
 	private ErrorLogger() {}
 	
+	/**
+	 * Logs an exception to TextConstant.LOG_FILE
+	 * 
+	 * @param e The exception
+	 */
 	public static synchronized void LogException(Throwable e) {
 		File logFile = new File(TextConstant.LOG_FILE);
 		

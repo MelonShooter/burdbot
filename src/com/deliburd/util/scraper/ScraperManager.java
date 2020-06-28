@@ -22,10 +22,21 @@ public class ScraperManager {
 	
 	private ScraperManager() {}
 	
+	/**
+	 * Gets a scraper given the type
+	 * 
+	 * @param scraper The scraper's type
+	 * @return The scraper
+	 */
 	public static Scraper getScraper(ScraperType scraper) {
 		return scraperMap.get(scraper);
 	}
 	
+	/**
+	 * Gets all scrapers
+	 * 
+	 * @return A collection of the scrapers
+	 */
 	public static Collection<Scraper> getAllScrapers() {
 		return scraperMap.values();
 	}
