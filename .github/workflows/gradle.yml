@@ -34,7 +34,7 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
       - name: Rename the jar
-        run: mv $(ls -1 build/libs | grep all\.jar) $(ls -1 build/libs | grep all\.jar | sed 's/.*\(-all.jar\)/$GITHUB_SHA\1/')
+        run: mv build/libs/$(ls -1 build/libs | grep all\.jar) build/libs/$(ls -1 build/libs | grep all\.jar | sed 's/.*\(-all.jar\)/GITHUB_SHA\1/')
       - name: Upload jar to VPS
         env:
           USRNAME: ${{ secrets.SFTP_USERNAME }}
