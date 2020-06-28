@@ -141,7 +141,7 @@ public class ReadingManager {
 				textFile.createNewFile();
 				var textFileWriter = new FileWriter(textFile, Charset.forName("UTF-8"), true);
 				
-				for(String string : scraper.getRandomTextBodies(scraper.getRecommendedTextAmount())) {	
+				for(String string : scraper.getRandomTextBodies(scraper.getRecommendedTextCount())) {	
 					textFileWriter.write(string);
 					textFileWriter.write(' ');
 				}

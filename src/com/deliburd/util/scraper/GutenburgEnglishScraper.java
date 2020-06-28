@@ -61,7 +61,7 @@ public class GutenburgEnglishScraper implements Scraper {
 	}
 
 	@Override
-	public int getRecommendedTextAmount() {
+	public int getRecommendedTextCount() {
 		return 1;
 	}
 	

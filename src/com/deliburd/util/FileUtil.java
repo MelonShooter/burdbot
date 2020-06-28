@@ -10,6 +10,11 @@ public final class FileUtil {
 
 	private FileUtil() {}
 
+	/**
+	 * Empties out a folder
+	 * 
+	 * @param folder The folder to empty
+	 */
 	public static void emptyFolder(File folder) {
 		File[] files = folder.listFiles();
 
@@ -22,6 +27,10 @@ public final class FileUtil {
 		folderPath = null;
 	}
 
+	/**
+	 * Internal method to empty out the folder
+	 * @param files Array of files in a directory
+	 */
 	private static void recursiveEmptyFolder(File[] files) {
 		for (int i = 0; i < files.length; i++) {
 			if (!files[i].delete()) {
@@ -52,6 +61,11 @@ public final class FileUtil {
 		}
 	}
 
+	/**
+	 * Checks whether a folder is empty
+	 * @param folder The folder to check
+	 * @return whether the folder is empty
+	 */
 	public static boolean isFolderEmpty(File folder) {
 		if (!folder.isDirectory()) {
 			throw new UncheckedIOException("Argument supplied is a file or doesn't exist.", new IOException());
@@ -60,6 +74,11 @@ public final class FileUtil {
 		return folder.list().length == 0;
 	}
 
+	/**
+	 * Checks whether a folder is empty or doesn't exist
+	 * @param folder The folder to check
+	 * @return Whether the folder is empty or doesn't exist
+	 */
 	public static boolean isFolderEmptyOrDoesNotExist(File folder) {
 		return !folder.exists() || isFolderEmpty(folder);
 	}

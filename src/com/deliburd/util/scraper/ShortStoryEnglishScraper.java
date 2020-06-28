@@ -204,7 +204,7 @@ public class ShortStoryEnglishScraper implements Scraper {
 	}
 
 	@Override
-	public int getRecommendedTextAmount() {
+	public int getRecommendedTextCount() {
 		return 9;
 	}
 	
