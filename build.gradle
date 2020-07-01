@@ -18,7 +18,7 @@ shadowJar {
 
 mainClassName = 'com.deliburd.bot.burdbot.Main'
 
-version = '2.1'
+version = rootProject.file('version.txt').text.trim()
 
 sourceSets {
 	main.java.srcDirs = ['src']
