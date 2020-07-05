@@ -8,6 +8,8 @@ import java.io.PrintStream;
 
 import com.deliburd.readingpuller.TextConstant;
 
+import net.dv8tion.jda.api.entities.MessageChannel;
+
 public class ErrorLogger {
 	private ErrorLogger() {}
 	
@@ -31,5 +33,10 @@ public class ErrorLogger {
 		} catch (FileNotFoundException e1) {
 			System.out.println("Logging file could not be found.");
 		}
+	}
+	
+	public static synchronized void LogException(Throwable e, MessageChannel channel) {
+		BotUtil.sendMessage(channel, "I'm sorry, but something has gone wrong. Please notify <@367538590520967181> of this.");
+		LogException(e);
 	}
 }
