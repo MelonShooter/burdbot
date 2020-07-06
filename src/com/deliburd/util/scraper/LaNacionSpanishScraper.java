@@ -52,6 +52,9 @@ public class LaNacionSpanishScraper implements Scraper {
 		String endContent = "section.listado.ademas.redaccion.notas4.floatFix";
 		Element body = story.select(sectionClass).first().children().select(headerContent).first();
 		Elements articleText = new Elements();
+		if(body == null) {
+			return "";
+		}
 		articleText.add(body);
 
 		boolean end = false;
@@ -59,6 +62,10 @@ public class LaNacionSpanishScraper implements Scraper {
 		while(!end) {
 			body = body.nextElementSibling();
 			
+			if(body == null) {
+				return "";
+			}
+
 			if(body.is("p")) {
 				articleText.add(body);
 			} else if(body.is(endContent)) {
