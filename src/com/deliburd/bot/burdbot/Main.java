@@ -3,8 +3,6 @@ package com.deliburd.bot.burdbot;
 import java.util.ConcurrentModificationException;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.regex.Pattern;
-
 import javax.security.auth.login.LoginException;
 
 import com.deliburd.bot.burdbot.commands.CommandManager;
@@ -15,25 +13,30 @@ import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
 import com.deliburd.util.BotUtil;
 import com.deliburd.util.ErrorLogger;
+import com.deliburd.util.MessageResponseQueue;
+import com.deliburd.util.ServerConfig;
 
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class Main extends ListenerAdapter {
-	public static void main(String[] args)
-    throws LoginException
-    {
+	public static void main(String[] args) throws LoginException {
         reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
         
-		MultiCommand fetchTextCommand = CommandManager.addCommand("fetchtext", Constant.FETCH_TEXT_DESCRIPTION)
+		ServerConfig.registerTable("templates");
+		JDABuilder burdRecorder = JDABuilder.createDefault(BotConstant.BOT_TOKEN_STRING);
+		String helpDescription = "Displays a list of commands and their descriptions.";
+        CommandManager sesionManager = new CommandManager(Constant.COMMAND_PREFIX, helpDescription, burdRecorder);
+        
+		MultiCommand fetchTextCommand = sesionManager.addCommand("fetchtext", Constant.FETCH_TEXT_DESCRIPTION)
 				.setMinArguments(2)
 				.setDefaultAction(new MultiCommandAction() {
 					@Override
-					public void OnCommandRun(String[] args, MessageChannel channel) {
+					public void OnCommandRun(String[] args, MessageReceivedEvent event, MultiCommand command) {
 						if (!ReadingManager.isRegeneratingTexts()) {
+							MessageChannel channel = event.getChannel();
 							BotUtil.sendMessage(channel, "```" + ReadingManager.fetchText(args[0], args[1]) + "```");
 						}
 					}
@@ -60,8 +63,7 @@ public class Main extends ListenerAdapter {
 				.setCooldown(10)
 				.finalizeCommand();
 
-        JDA jda = JDABuilder.createDefault(BotConstant.BOT_TOKEN_STRING).build();
-        jda.addEventListener(new CommandManager(), new Main());
+		burdRecorder.addEventListeners(MessageResponseQueue.getQueue()).build();
     }
     
     /**

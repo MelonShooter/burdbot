@@ -49,4 +49,9 @@ public class Constant {
 	 * The message to give users when an internal error occurs
 	 */
 	public static final String ERROR_MESSAGE = "I'm sorry, but something has gone wrong. Please notify <@367538590520967181> of this.";
+
+	/**
+	 * The bot's name
+	 */
+	public static final String BOT_NAME = "BurdBot";
 }
