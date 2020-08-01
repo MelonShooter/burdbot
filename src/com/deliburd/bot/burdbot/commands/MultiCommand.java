@@ -134,11 +134,11 @@ public class MultiCommand extends Command {
 			throw new RuntimeException("This command has already been finalized.");
 		}
 		
-		if(commandArgumentMap.FindValue(arguments) != null) {
+		if(commandArgumentMap.findValue(arguments) != null) {
 			throw new RuntimeException("This argument path has already been filled.");
 		}
 
-		commandArgumentMap.AddValue(arguments, action);
+		commandArgumentMap.addValue(arguments, action);
 		
 		return this;
 	}
@@ -338,7 +338,7 @@ public class MultiCommand extends Command {
 		
 		var parsedArgs = convertAliasesToBaseArgumentsAndParse(args);
 		
-		MultiCommandAction action = commandArgumentMap.FindValue(parsedArgs);
+		MultiCommandAction action = commandArgumentMap.findValue(parsedArgs);
 		
 		if(action == null) {
 			giveInvalidArgumentMessage(channel);
