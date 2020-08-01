@@ -231,15 +231,15 @@ public class AudioWriter implements IAudioFileWriter {
 			fileSize = targetSize;
 		} else {
 			baseDirectory = subfolder;
-			audioFilePath.append(subfolder.getName());
-			audioFilePath.append(File.separator);
 			fileSize = separateFileSizeLimit;
+			audioFilePath.append(subfolder.getName())
+					.append(File.separator);
 		}
 		
-		audioFilePath.append(filePrefix);
-		audioFilePath.append("-");
-		audioFilePath.append(baseDirectory.listFiles().length);
-		audioFilePath.append(audioFileExtension);
+		audioFilePath.append(filePrefix)
+				.append("-")
+				.append(baseDirectory.listFiles().length)
+				.append(audioFileExtension);
 		
 		IAudioFileWriter newAudioFileWriter;
 		File newAudioFile = new File(audioFilePath.toString());
