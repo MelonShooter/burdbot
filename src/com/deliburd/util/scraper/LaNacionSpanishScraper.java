@@ -41,9 +41,9 @@ public class LaNacionSpanishScraper implements Scraper {
 		Elements aTagLinksTitles = laNacionLinkPage.select("article.nota > h2 > a[href]");
 		
 		var linkList = aTagLinksTitles.eachAttr("href");
-		ArrayUtil.prependAndAppendStringToList(LA_NACION_MAIN_PAGE, linkList, "/////");
+		var parsedLinkList = ArrayUtil.prependAndAppendStringToList(LA_NACION_MAIN_PAGE, linkList, "/////");
 		
-		return ArrayUtil.concatStringLists(linkList, aTagLinksTitles.eachText());
+		return ArrayUtil.concatStringLists(parsedLinkList, aTagLinksTitles.eachText());
 	}
 	
 	private String stripArticle(Document story, String title) {
@@ -93,7 +93,7 @@ public class LaNacionSpanishScraper implements Scraper {
 				throw new Exception("Links from La nacion could not be fetched");
 			}
 			
-			int randomLinkIndex = ArrayUtil.randomArrayIndex(laNacionArticles);
+			int randomLinkIndex = ArrayUtil.randomCollectionIndex(laNacionArticles);
 			randomLink = laNacionArticles.get(randomLinkIndex);
 			laNacionArticles.remove(randomLinkIndex);
 		}

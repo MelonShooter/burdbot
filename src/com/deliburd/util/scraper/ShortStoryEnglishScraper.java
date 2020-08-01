@@ -46,7 +46,7 @@ public class ShortStoryEnglishScraper implements Scraper {
 				throw new Exception("Links from Easy Stories in English could not be fetched");
 			}
 			
-			int randomLinkIndex = ArrayUtil.randomArrayIndex(storyLinks);
+			int randomLinkIndex = ArrayUtil.randomCollectionIndex(storyLinks);
 			randomLink = storyLinks.get(randomLinkIndex);
 			storyLinks.remove(randomLinkIndex);
 		}

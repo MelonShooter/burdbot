@@ -21,7 +21,7 @@ public class GutenburgEnglishScraper implements Scraper {
 			gutenburgFiles = new ArrayList<File>(Arrays.asList(new File(TextConstant.GUTENBURG_CACHE_FOLDER).listFiles()));
 		}
 		
-		int randomTextIndex = ArrayUtil.randomArrayIndex(gutenburgFiles);
+		int randomTextIndex = ArrayUtil.randomCollectionIndex(gutenburgFiles);
 		String text = Files.readString(gutenburgFiles.get(randomTextIndex).toPath());
 		gutenburgFiles.remove(randomTextIndex);
 		

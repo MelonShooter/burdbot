@@ -21,7 +21,7 @@ public class PapeluchoScraper implements Scraper {
 			papeluchoFiles = new ArrayList<File>(Arrays.asList(new File(TextConstant.PAPELUCHO_CACHE_FOLDER).listFiles()));
 		}
 		
-		int randomTextIndex = ArrayUtil.randomArrayIndex(papeluchoFiles);
+		int randomTextIndex = ArrayUtil.randomCollectionIndex(papeluchoFiles);
 		String text = Files.readString(papeluchoFiles.get(randomTextIndex).toPath());
 		papeluchoFiles.remove(randomTextIndex);
 		
