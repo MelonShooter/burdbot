@@ -6,37 +6,67 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import com.deliburd.readingpuller.TextConstant;
-
+import com.deliburd.bot.burdbot.Constant;
 import net.dv8tion.jda.api.entities.MessageChannel;
 
 public class ErrorLogger {
 	private ErrorLogger() {}
 	
-	public static synchronized void LogException(Throwable e) {
-		File logFile = new File(TextConstant.LOG_FILE);
+	/**
+	 * Logs a throwable to TextConstant.LOG_FILE
+	 * 
+	 * @param e The exception
+	 */
+	public static void LogException(Throwable e) {
+		File logFile = new File(Constant.LOG_FILE);
 		
 		if(!logFile.exists()) {
 			try {
 				logFile.createNewFile();
 			} catch (IOException e1) {
 				System.out.println("Failed to create logging file");
+				return;
 			}
 		}
 
-		PrintStream printStream;
-		try {
-			printStream = new PrintStream(new FileOutputStream(logFile, true));
+		try(PrintStream printStream = new PrintStream(new FileOutputStream(logFile, true))) {
 			e.printStackTrace(printStream);
 			printStream.append('\n');
-			printStream.close();
+			e.printStackTrace();
 		} catch (FileNotFoundException e1) {
 			System.out.println("Logging file could not be found.");
 		}
 	}
 	
-	public static synchronized void LogException(Throwable e, MessageChannel channel) {
-		BotUtil.sendMessage(channel, "I'm sorry, but something has gone wrong. Please notify <@367538590520967181> of this.");
+	
+	/**
+	 * Logs a throwable to the log file and gives a generic error message to a certain channel to alert users
+	 * 
+	 * @param e The throwable to log
+	 * @param channel The channel to give the error message in
+	 */
+	public static void LogException(Throwable e, MessageChannel channel) {
+		BotUtil.sendMessage(channel, Constant.ERROR_MESSAGE);
 		LogException(e);
+	}
+	
+	/**
+	 * Logs an issue to the log file and gives a generic error message to a certain channel to alert users
+	 * 
+	 * @param issue The issue to log
+	 * @param channel The channel to give the error message in
+	 */
+	public static void LogIssue(String issue, MessageChannel channel) {
+		BotUtil.sendMessage(channel, Constant.ERROR_MESSAGE);
+		LogIssue(issue);
+	}
+	
+	/**
+	 * Logs an issue to the log file
+	 * 
+	 * @param issue The issue to log
+	 */
+	public static void LogIssue(String issue) {
+		LogException(new Exception(issue));
 	}
 }

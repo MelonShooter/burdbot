@@ -39,4 +39,14 @@ public class Constant {
 	 * The path leading to the config folder
 	 */
 	public static final String CONFIG_PATH = System.getProperty("user.dir") + File.separator + "config" + File.separator;
+	
+	/**
+	 * The path leading to the log file
+	 */
+	public static final String LOG_FILE = System.getProperty("user.dir") + File.separator + "log.txt";
+	
+	/**
+	 * The message to give users when an internal error occurs
+	 */
+	public static final String ERROR_MESSAGE = "I'm sorry, but something has gone wrong. Please notify <@367538590520967181> of this.";
 }
