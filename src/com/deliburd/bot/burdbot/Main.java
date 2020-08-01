@@ -3,6 +3,7 @@ package com.deliburd.bot.burdbot;
 import java.util.ConcurrentModificationException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.regex.Pattern;
 
 import javax.security.auth.login.LoginException;
 
@@ -18,8 +19,10 @@ import com.deliburd.util.ErrorLogger;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class Main {
+public class Main extends ListenerAdapter {
 	public static void main(String[] args)
     throws LoginException
     {
@@ -58,7 +61,7 @@ public class Main {
 				.finalizeCommand();
 
         JDA jda = JDABuilder.createDefault(BotConstant.BOT_TOKEN_STRING).build();
-        jda.addEventListener(new CommandManager());
+        jda.addEventListener(new CommandManager(), new Main());
     }
     
     /**
@@ -79,4 +82,33 @@ public class Main {
 			}
 		}, 0, interval * 1000);
 	}
+    
+    @Override
+    public void onMessageReceived(MessageReceivedEvent event) {
+    	final boolean canWrite = BotUtil.hasWritePermission(event);
+    	final long musicChannelID = 263643662808776704L;
+    	final String message = event.getMessage().getContentRaw();
+    	
+    	final String[] botPrefixes = {
+    		"-",
+    		"--",
+    		"---",
+    		";;",
+    		"!",
+    		"!!",
+    		"/"
+    	};
+    	
+    	boolean containsMusicPrefix = false;
+    	
+    	for (var prefix : botPrefixes) {
+    		if(message.startsWith(prefix)) {
+    			containsMusicPrefix = true;
+    		}
+    	}
+    	
+    	if(canWrite && event.getChannel().getIdLong() == musicChannelID && containsMusicPrefix) {
+    		BotUtil.sendMessage(event.getChannel(), "Please put music bot commands in <#247135634265735168> as they do not work here");
+    	}
+    }
 }

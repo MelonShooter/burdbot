@@ -8,6 +8,7 @@ import java.io.PrintStream;
 
 import com.deliburd.readingpuller.TextConstant;
 
+<<<<<<< HEAD
 public class ErrorLogger {
 	private ErrorLogger() {}
 	
@@ -16,6 +17,13 @@ public class ErrorLogger {
 	 * 
 	 * @param e The exception
 	 */
+=======
+import net.dv8tion.jda.api.entities.MessageChannel;
+
+public class ErrorLogger {
+	private ErrorLogger() {}
+	
+>>>>>>> master
 	public static synchronized void LogException(Throwable e) {
 		File logFile = new File(TextConstant.LOG_FILE);
 		
@@ -37,4 +45,12 @@ public class ErrorLogger {
 			System.out.println("Logging file could not be found.");
 		}
 	}
+<<<<<<< HEAD
+=======
+	
+	public static synchronized void LogException(Throwable e, MessageChannel channel) {
+		BotUtil.sendMessage(channel, "I'm sorry, but something has gone wrong. Please notify <@367538590520967181> of this.");
+		LogException(e);
+	}
+>>>>>>> master
 }
