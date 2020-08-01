@@ -1,5 +1,7 @@
 package com.deliburd.bot.burdbot;
 
+import java.io.File;
+
 public class Constant {
 	private Constant() {}
 
@@ -32,4 +34,9 @@ public class Constant {
 	 * The base command for help.
 	 */
 	public static final String HELP_COMMAND = "help";
+	
+	/**
+	 * The path leading to the config folder
+	 */
+	public static final String CONFIG_PATH = System.getProperty("user.dir") + File.separator + "config" + File.separator;
 }
