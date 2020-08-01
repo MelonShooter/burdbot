@@ -78,14 +78,14 @@ public abstract class Command {
 		final var commandNames = getCommandNames();
 		final long cooldownTime = commandCooldown.getTotalCooldown();
 		
-		description.append(Constant.COMMAND_PREFIX_WITH_SPACE);
+		description.append(Constant.COMMAND_PREFIX);
 		description.append(getCommandNames().get(0));
 		
 		if(commandNames.size() > 1) {
 			description.append("\nAliases: ");
 	
 			for(int i = 1; i < commandNames.size(); i++) {
-				description.append(Constant.COMMAND_PREFIX_WITH_SPACE);
+				description.append(Constant.COMMAND_PREFIX);
 				description.append(commandNames.get(i));
 				
 				if(i != commandNames.size() - 1) {

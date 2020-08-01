@@ -35,18 +35,20 @@ public class CommandManager extends ListenerAdapter {
 	 */
 	private static String commandHelp;
 	
-	/**
-	 * The help command's cooldown
-	 */
-	private static Cooldown helpCooldown;
-	
 	static {
 		final String helpDescription = "Displays a list of commands and their descriptions.";
 		MultiCommand help = addCommand(Constant.HELP_COMMAND, helpDescription).setArgumentDescriptions("A command.").addArgument(0);
 		help.addFinalArgumentPath(new MultiCommandAction() {
 			@Override
 			public void OnCommandRun(String[] args, MessageChannel channel) {
-				final Command command = commandNameMap.get(args[0]);
+				String baseCommand = commandAliasLookup.get(args[0]);
+				
+				if(baseCommand == null) {
+					help.giveInvalidArgumentMessage(channel);
+					return;
+				}
+				
+				Command command = commandNameMap.get(baseCommand);
 				
 				if (command == null) {
 					help.giveInvalidArgumentMessage(channel);
@@ -61,7 +63,7 @@ public class CommandManager extends ListenerAdapter {
 				sendHelp(channel);
 			}
 		});
-		helpCooldown = help.commandCooldown;
+
 		help.finalizeCommand();
 	}
 	
@@ -104,21 +106,21 @@ public class CommandManager extends ListenerAdapter {
 		final boolean canWrite = BotUtil.hasWritePermission(event);
 		if(canWrite) {
 			final MessageChannel channel = event.getChannel();
-			final String prefixWithSpace = Constant.COMMAND_PREFIX_WITH_SPACE;
-			final int minCommandLength = prefixWithSpace.length();
+			final String prefix = Constant.COMMAND_PREFIX;
+			final int minCommandLength = prefix.length() + 1;
 			final String message = event.getMessage().getContentDisplay();
 			final User user = event.getAuthor();
 			
-			if(message.length() >= minCommandLength && message.substring(0, minCommandLength).equals(prefixWithSpace)) {
+			if(message.length() >= minCommandLength && message.startsWith(prefix)) {
 				String[] messageArgs = message.split("\\s+");
-				final String baseCommand = commandAliasLookup.get(messageArgs[1]);
-				
-				Command command = commandNameMap.get(baseCommand);
+				String baseCommand = messageArgs[0].substring(prefix.length());
+				String parsedBaseCommand = commandAliasLookup.get(baseCommand);
+				Command command = commandNameMap.get(parsedBaseCommand);
 				
 				if(command != null) {
 					final Cooldown cooldown = command.commandCooldown;
 					if(command.isFinalized() && cooldown.isCooldownOver(user)) {
-						final String[] commandArguments = messageArgs.length == 2 ? null : Arrays.copyOfRange(messageArgs, 2, messageArgs.length);
+						final String[] commandArguments = messageArgs.length == 1 ? null : Arrays.copyOfRange(messageArgs, 1, messageArgs.length);
 						command.onCommandCalled(commandArguments, channel, user);
 						cooldown.resetCooldown(user);
 					} else if (!command.isFinalized()) {
@@ -126,10 +128,6 @@ public class CommandManager extends ListenerAdapter {
 					}
 
 				}
-			} else if(message.equals(Constant.COMMAND_PREFIX) && helpCooldown.isCooldownOver(user)) {
-				String helpCommand = Constant.COMMAND_PREFIX_WITH_SPACE + Constant.HELP_COMMAND;
-				BotUtil.sendMessage(channel, "Type " + helpCommand + " for the command list.");
-				helpCooldown.resetCooldown(user);
 			}
 		}
 	}
@@ -147,14 +145,20 @@ public class CommandManager extends ListenerAdapter {
 			
 			for (var key : sortedKeys) {
 				commandHelpString.append("```");
-				commandHelpString.append(Constant.COMMAND_PREFIX_WITH_SPACE);
+				commandHelpString.append(Constant.COMMAND_PREFIX);
 				commandHelpString.append(key);
 				commandHelpString.append(" - ");
 				commandHelpString.append(commandNameMap.get(key).getShortCommandDescription());
 				commandHelpString.append("```");
 			}
 			
-			commandHelpString.append("\nFor more information, type .sl help followed by the command\neg: .sl help fetchtext");
+			commandHelpString.append("\nFor more information, type ")
+					.append(Constant.COMMAND_PREFIX)
+					.append(Constant.HELP_COMMAND)
+					.append(" followed by the command\neg: ")
+					.append(Constant.COMMAND_PREFIX)
+					.append(Constant.HELP_COMMAND)
+					.append(" fetchtext");
 			commandHelp = commandHelpString.toString();
 		}
 		

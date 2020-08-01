@@ -6,7 +6,7 @@ public class Constant {
 	/**
 	 * The prefix for the bot
 	 */
-	public static final String COMMAND_PREFIX = ".sl";
+	public static final String COMMAND_PREFIX = ",";
 
 	/**
 	 * The interval in which to reload the texts in seconds
@@ -17,11 +17,6 @@ public class Constant {
 	 * The interval in which texts can be requested per user
 	 */
 	public static final int TEXT_INTERVAL = 10;
-	
-	/**
-	 * The prefix for the bot with a space after it
-	 */
-	public static final String COMMAND_PREFIX_WITH_SPACE = COMMAND_PREFIX + " ";
 	
 	/**
 	 * The description of the fetchtext command
