@@ -156,10 +156,8 @@ public class ReadingManager {
 	 */
 	private static boolean scrapeAllSources() {
 		var scrapers = ScraperManager.getAllScrapers();
-		BufferedWriter fileWriter = null;
 		
 		for(var scraper : scrapers) {
-			try {
 				var filePathString = new StringBuilder();
 				filePathString.append(TextConstant.TEXT_FOLDER);
 				filePathString.append(File.separator);
@@ -168,9 +166,9 @@ public class ReadingManager {
 				filePathString.append(scraper.getDifficulty());
 				filePathString.append(File.separator);
 				
-				var textFile = new File(filePathString.toString() + "text.txt");
-				textFile.createNewFile();
-				fileWriter = new BufferedWriter(new FileWriter(textFile, Charset.forName("UTF-8"), true));
+				File textFile = new File(filePathString.toString() + "text.txt");
+				
+				try(BufferedWriter fileWriter = new BufferedWriter(new FileWriter(textFile, Charset.forName("UTF-8"), true))) {
 				
 				for(String text : scraper.getRandomTextBodies(scraper.getRecommendedTextCount())) {
 					if(text == null) {
@@ -182,20 +180,10 @@ public class ReadingManager {
 					fileWriter.write(' ');
 				}
 				
-				fileWriter.close();
-			} catch (IOException e) {
-				ErrorLogger.LogException(e);
-				
-				if (fileWriter != null) {
-					try {
-						fileWriter.close();
-					} catch (IOException e1) {
-						ErrorLogger.LogException(e);
-					}
+				} catch (IOException e) {
+					ErrorLogger.LogException(e);
+					return false;
 				}
-
-				return false;
-			}
 		}
 
 		return true;

@@ -5,19 +5,13 @@ import java.util.EnumMap;
 
 public class ScraperManager {
 	public enum ScraperType {
-		Gutenburg,
 		LaNacion,
-		Papelucho,
-		EnglishStory
 	}
 	
 	public static EnumMap<ScraperType, Scraper> scraperMap = new EnumMap<>(ScraperType.class);
 	
 	static {
-		scraperMap.put(ScraperType.Gutenburg, new GutenburgEnglishScraper());
-		scraperMap.put(ScraperType.EnglishStory, new ShortStoryEnglishScraper());
 		scraperMap.put(ScraperType.LaNacion, new LaNacionSpanishScraper());
-		scraperMap.put(ScraperType.Papelucho, new PapeluchoScraper());
 	}
 	
 	private ScraperManager() {}

@@ -3,38 +3,32 @@ package com.deliburd.util.scraper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
 import com.deliburd.util.ArrayUtil;
 import com.deliburd.util.ErrorLogger;
+import com.deliburd.util.scraper.ScraperManager.ScraperType;
 
 public abstract class LocalScraper implements Scraper {
-	private File[] localFiles;
+	private final static int MAX_SCRAPE_COUNT = 1;
+	private final File[] localFiles;
+	private final ScraperLanguage scraperLanguage;
+	private final ScraperType scraperSource;
+	private final int maxTextScrapeCount;
 	
-	LocalScraper(File directory) {
+	LocalScraper(File directory, ScraperLanguage language, ScraperType type) {
+		this(directory, language, type, MAX_SCRAPE_COUNT);
+	}
+	
+	LocalScraper(File directory, ScraperLanguage language, ScraperType type, int maxScrapeCount) {
 		localFiles = directory.listFiles();
-
-		if(localFiles == null) {
-			ErrorLogger.LogException(new Exception("Invalid directory for LocalScraper. Can't retreive any texts."));
-		}
-	}
-	
-	@Override
-	public String getRandomTextBody() {		
-		if(localFiles == null) {
-			return null;
+		
+		if(localFiles == null || localFiles.length == 0) {
+			throw new IllegalArgumentException("The directory for a LocalScraper cannot be null or empty.");
 		}
 		
-		final var randomText = ArrayUtil.randomArrayValue(localFiles);
-		
-		try {
-			return Files.readString(randomText.toPath());
-		} catch (IOException e) {
-			ErrorLogger.LogException(e);
-			return null;
-		}
-	}
-	
-	public String[] getRecommendedTextAmount() {
-		return getRandomTextBodies(getRecommendedTextCount());
+		scraperLanguage = language;
+		scraperSource = type;
+		maxTextScrapeCount = maxScrapeCount;
 	}
 
 	@Override
@@ -48,8 +42,34 @@ public abstract class LocalScraper implements Scraper {
 		return texts;
 	}
 	
+
 	@Override
-	public int getRecommendedTextCount() {
-		return 1;
+	public ScraperLanguage getLanguage() {
+		return scraperLanguage;
+	}
+
+	@Override
+	public ScraperType getSource() {
+		return scraperSource;
+	}
+	
+	@Override
+	public int getMaxTextScrapeCount() {
+		return maxTextScrapeCount;
+	}
+	
+	private String getRandomTextBody() {		
+		if(localFiles == null) {
+			return null;
+		}
+		
+		File randomText = ArrayUtil.randomArrayValue(localFiles);
+		
+		try {
+			return Files.readString(randomText.toPath());
+		} catch (IOException e) {
+			ErrorLogger.LogException(e);
+			return null;
+		}
 	}
 }
