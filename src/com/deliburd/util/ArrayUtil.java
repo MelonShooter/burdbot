@@ -38,8 +38,8 @@ public class ArrayUtil {
 		var concatenatedValue = new StringBuilder();
 		
 		for(int i = 0; i < list1.size(); i++) {
-			concatenatedValue.append(list1.get(i));
-			concatenatedValue.append(list2.get(i));
+			concatenatedValue.append(list1.get(i))
+					.append(list2.get(i));
 			mergedList.add(concatenatedValue.toString());
 			concatenatedValue.setLength(0);
 		}
@@ -62,10 +62,10 @@ public class ArrayUtil {
 		list.forEach(string -> listCopy.add(string));
 		
 		for(int i = 0; i < list.size(); i++) {
-			concatenatedValue.append(stringToPrepend);
-			concatenatedValue.append(list.get(i));
-			concatenatedValue.append(stringToAppend);
-			list.set(i, concatenatedValue.toString());
+			concatenatedValue.append(stringToPrepend)
+					.append(list.get(i))
+					.append(stringToAppend);
+			listCopy.set(i, concatenatedValue.toString());
 			concatenatedValue.setLength(0);
 		}
 		
