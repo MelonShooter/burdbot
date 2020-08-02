@@ -13,6 +13,8 @@ import com.deliburd.util.Cooldown;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -162,7 +164,7 @@ public class CommandManager extends ListenerAdapter {
 	@Override
 	public void onMessageReceived(MessageReceivedEvent event) {
 		boolean canWrite = BotUtil.hasWritePermission(event);
-		if(canWrite) {
+		if(event.getChannelType() == ChannelType.TEXT && canWrite && !event.getAuthor().isBot()) {
 			String prefix = Constant.COMMAND_PREFIX;
 			int minCommandLength = prefix.length() + 1;
 			String message = event.getMessage().getContentRaw();
@@ -188,8 +190,13 @@ public class CommandManager extends ListenerAdapter {
 
 			Cooldown cooldown = command.commandCooldown;
 			if (command.isFinalized() && cooldown.isCooldownOver(user)) {
-				String[] commandArguments = messageArgs.length == 1 ? null : Arrays.copyOfRange(messageArgs, 1, messageArgs.length);
-				command.onCommandCalled(commandArguments, event);
+				if(hasPermission(command, event)) {
+					String[] commandArguments = messageArgs.length == 1 ? null : Arrays.copyOfRange(messageArgs, 1, messageArgs.length);
+					command.onCommandCalled(commandArguments, event);
+				} else {
+					command.giveInsufficientPermissionsMessage(event.getChannel());
+				}
+				
 				cooldown.resetCooldown(user);
 			} else if (!command.isFinalized()) {
 				throw new RuntimeException("Tried to call a command that wasn't finalized");
@@ -198,6 +205,15 @@ public class CommandManager extends ListenerAdapter {
 		}
 	}
 	
+	private boolean hasPermission(Command command, MessageReceivedEvent event) {
+		Permission[] restrictions = command.getPermissionRestrictions();
+		if(restrictions == null || event.getMember().hasPermission(restrictions)) {
+			return true;
+		}
+		
+		return false;
+	}
+
 	/**
 	 * Creates an alias for a command.
 	 * 

@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 import com.deliburd.bot.burdbot.Constant;
+import com.deliburd.util.BotUtil;
 import com.deliburd.util.Cooldown;
 
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 public abstract class Command {
@@ -16,6 +19,7 @@ public abstract class Command {
 	private final String commandName;
 	private final String shortCommandDescription;
 	private final String commandPrefix;
+	private Permission[] permissionRestrictions;
 
 	/**
 	 * A bot command
@@ -37,11 +41,11 @@ public abstract class Command {
 	/**
 	 * Sets the cooldown for the command
 	 * @param newCooldown The cooldown in seconds
-	 * @return The command
+	 * @return The modified command
 	 */
 	public Command setCooldown(long newCooldown) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
 		}
 		
 		commandCooldown.changeTotalCooldown(newCooldown);
@@ -51,14 +55,31 @@ public abstract class Command {
 	/**
 	 * Sets the cooldown for the command
 	 * @param newCooldown The cooldown object
-	 * @return The command
+	 * @return The modified command
 	 */
 	public Command setCooldown(Cooldown newCooldown) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
 		}
 		
 		commandCooldown = newCooldown;
+		return this;
+	}
+	
+	/**
+	 * Sets restrictions on who can use the command
+	 * 
+	 * @param restrictions All of the cumulative permissions required to be able to use the command
+	 * @return The modified command
+	 */
+	public Command setPermissionRestrictions(Permission... restrictions) {
+		if(isFinalized) {
+			throw new IllegalStateException("This command has already been finalized.");
+		} else if(restrictions.length == 0) {
+			throw new IllegalArgumentException("The restrictions array cannot be blank.");
+		}
+		
+		permissionRestrictions = restrictions;
 		return this;
 	}
 	
@@ -131,6 +152,7 @@ public abstract class Command {
 	 * Adds additional aliases to the base command
 	 * 
 	 * @param aliases The additional aliases
+	 * @return The modified command
 	 */
 	public Command addCommandNames(String... aliases) {
 		if(isFinalized) {
@@ -200,6 +222,25 @@ public abstract class Command {
 		return commandAliases.get(0);
 	}
 	
+	/**
+	 * Gets the permission restrictions on this command. Null if there are none
+	 * 
+	 * @return The permissions required to run this command
+	 */
+	public Permission[] getPermissionRestrictions() {
+		return permissionRestrictions;
+	}
+	
+	/**
+	 * Gives a message for insufficient permissions
+	 * 
+	 * @param channel The channel to give the message in
+	 */
+	public void giveInsufficientPermissionsMessage(MessageChannel channel) {
+		String insufficientPermissionsMessage = "You don't have the sufficient permissions to run this command";
+		BotUtil.sendMessage(channel, insufficientPermissionsMessage);
+	}
+
 	/**
 	 * Called when the command is run
 	 * 
