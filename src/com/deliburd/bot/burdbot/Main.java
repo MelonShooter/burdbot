@@ -128,6 +128,7 @@ public class Main extends ListenerAdapter {
 				.addFinalArgumentPath("", "")
 				.setArgumentDescriptions(channelIDArgumentDescription, templateArgumentDescription)
 				.addCommandNames("addwchannel", "addwc")
+				.setPermissionRestrictions(Permission.MANAGE_CHANNEL)
 				.finalizeCommand();
 		
 		String removeChannelCommandDescription = "Removes a whitelisted channel so that audio can't be sent there anymore.";
@@ -138,6 +139,7 @@ public class Main extends ListenerAdapter {
 				.addFinalArgumentPath(Main::removeChannelFromWhitelist, "")
 				.setArgumentDescriptions(removedChannelIDDescription)
 				.addCommandNames("rmwhitelistedchannel", "removewchannel", "removewc", "rmwchannel", "rmwc")
+				.setPermissionRestrictions(Permission.MANAGE_CHANNEL)
 				.finalizeCommand();
 		
 		String showChannelCommandDescription = "Shows a list of all whitelisted channels and their templates if they have one.";
