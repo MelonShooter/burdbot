@@ -66,7 +66,7 @@ public class BotUtil {
 	 * Checks if the bot has write permissions. If the channel isn't a TextChannel provided, this returns true
 	 * 
 	 * @param event The mssage received event
-	 * @return Whether the bot has write permissions. Returns false if not from a guild or not a text channel
+	 * @return Whether the bot has write permissions. Returns true if not from a guild or not a text channel
 	 */
 	public static boolean hasWritePermission(MessageReceivedEvent event) {
 		if(!event.isFromGuild() || event.getChannelType() != ChannelType.TEXT) {
