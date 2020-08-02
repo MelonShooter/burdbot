@@ -23,7 +23,7 @@ public class Constant {
 	/**
 	 * The description of the fetchtext command
 	 */
-	public static final String FETCH_TEXT_DESCRIPTION = "Gets a text based on the language and difficulty specified";
+	public static final String FETCH_TEXT_DESCRIPTION = "Gets a text based on the language and difficulty specified.";
 	
 	/**
 	 * The default command cooldown time
