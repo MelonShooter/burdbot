@@ -1,11 +1,10 @@
 package com.deliburd.bot.burdbot.commands;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import com.deliburd.bot.burdbot.Constant;
 import com.deliburd.util.BotUtil;
@@ -33,7 +32,7 @@ public class CommandManager extends ListenerAdapter {
 	/**
 	 * A list of all of the bot's commands mapped to the command object
 	 */
-	private final ConcurrentHashMap<String, Command> commandNameMap;
+	private final ConcurrentSkipListMap<String, Command> commandNameMap;
 	
 	/**
 	 * A set of the registered commands.
@@ -49,7 +48,6 @@ public class CommandManager extends ListenerAdapter {
 	private final JDA JDA;
 	private final JDABuilder JDABuilder;
 	private final String helpDescription;
-	private volatile String commandHelp;
 	private volatile boolean isInitialized;
 	
 	/**
@@ -64,7 +62,7 @@ public class CommandManager extends ListenerAdapter {
 		this.helpDescription = Objects.requireNonNull(helpDescription, "The help description cannot be null");
 		this.JDA = null;
 		this.JDABuilder = Objects.requireNonNull(builder, "The JDA builder cannot be null");
-		commandNameMap = new ConcurrentHashMap<String, Command>();
+		commandNameMap = new ConcurrentSkipListMap<String, Command>();
 		commandSet = ConcurrentHashMap.newKeySet();
 		commandAliasLookup = new ConcurrentHashMap<String, String>();
 	}
@@ -81,7 +79,7 @@ public class CommandManager extends ListenerAdapter {
 		this.helpDescription = Objects.requireNonNull(helpDescription, "The help description cannot be null");
 		this.JDA = Objects.requireNonNull(JDA, "The JDA instance cannot be null");
 		this.JDABuilder = null;
-		commandNameMap = new ConcurrentHashMap<String, Command>();
+		commandNameMap = new ConcurrentSkipListMap<String, Command>();
 		commandSet = ConcurrentHashMap.newKeySet();
 		commandAliasLookup = new ConcurrentHashMap<String, String>();
 	}
@@ -254,38 +252,43 @@ public class CommandManager extends ListenerAdapter {
 			JDABuilder.addEventListeners(this);
 		}
 	}
-	
+
 	/**
 	 * Sends the help message
-	 *  
-	 * @param channel The channel's name to send the message to
+	 * 
+	 * @param args The arguments for this command (will be null)
+	 * @param event The event associated with the command typed
+	 * @param selfCommand The MultiCommand object associated with this command
 	 */
-	private void sendHelp(String[] args, MessageReceivedEvent event, MultiCommand command) {
-		if(commandHelp == null) {
-			StringBuilder commandHelpString = new StringBuilder(Constant.BOT_NAME + "'s Commands:\n");
-			var sortedKeys = new ArrayList<String>(commandNameMap.keySet());
-			Collections.sort(sortedKeys);
+	private void sendHelp(String[] args, MessageReceivedEvent event, MultiCommand selfCommand) {
+		StringBuilder commandHelpString = new StringBuilder(Constant.BOT_NAME + "'s Commands:\n");
+		var commandEntrySet = commandNameMap.entrySet();
+
+		for (var commandEntry : commandEntrySet) {
+			Command command = commandEntry.getValue();
 			
-			for (var key : sortedKeys) {
-				commandHelpString.append("```")
+			if(hasPermission(command, event)) {
+				String commandName = commandEntry.getKey();
+				
+				commandHelpString
+						.append("```")
 						.append(Constant.COMMAND_PREFIX)
-						.append(key)
+						.append(commandName)
 						.append(" - ")
-						.append(commandNameMap.get(key).getShortCommandDescription())
+						.append(commandNameMap.get(commandName).getShortCommandDescription())
 						.append("```");
 			}
-			
-			String fullHelpCommand = Constant.COMMAND_PREFIX + Constant.HELP_COMMAND;
-			
-			commandHelpString.append("\nFor more information, type ")
-						.append(fullHelpCommand)
-						.append(" followed by the command.\n")
-						.append(fullHelpCommand)
-						.append(" <Command>");
-			commandHelp = commandHelpString.toString();
 		}
-		
-		BotUtil.sendMessage(event.getChannel(), commandHelp);
+
+		String fullHelpCommand = Constant.COMMAND_PREFIX + Constant.HELP_COMMAND;
+
+		commandHelpString.append("\nFor more information, type ")
+				.append(fullHelpCommand)
+				.append(" followed by the command.\n")
+				.append(fullHelpCommand)
+				.append(" <Command>");
+
+		BotUtil.sendMessage(event.getChannel(), commandHelpString.toString());
 	}
 	
 	/**
@@ -334,6 +337,8 @@ public class CommandManager extends ListenerAdapter {
 
 		if (command == null) {
 			helpCommand.giveInvalidArgumentMessage(channel);
+		} else if (!hasPermission(command, event)) {
+			BotUtil.sendMessage(channel, "You don't have access to this command.");
 		} else {
 			BotUtil.sendMessage(channel, command.getCommandDescription());
 		}
