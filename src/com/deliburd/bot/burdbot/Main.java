@@ -401,7 +401,8 @@ public class Main extends ListenerAdapter {
 	 * 
 	 * @param event The MessageReceivedEvent associated when the command was run
 	 * @param channelIDString The channel ID of the channel to get the template data for as a string
-	 * @param JsonNode The JsonNode containing the template data
+	 * @param channelTemplate The JsonNode containing the template data
+	 * @return The template data for the given channel as a string
 	 */
 	private static String getChannelTemplateData(MessageReceivedEvent event, String channelIDString, JsonNode channelTemplate) {
 		MessageBuilder channelInfoBuilder = new MessageBuilder(); 
@@ -631,6 +632,7 @@ public class Main extends ListenerAdapter {
 	 * @param replacements A pair containing channel ID as the key and an ArrayList of strings containing questions and
 	 * names of each replacement as the value
 	 * @param isLast Whether this is the last callback that will be run in the chain
+	 * @return Whether the template callback should continue chaining
 	 */
 	private static boolean templateCallback(MessageReceivedEvent event, MessageResponse response, Pair<String, ArrayList<String>> replacements, boolean isLast) {
 		String message = event.getMessage().getContentDisplay();
