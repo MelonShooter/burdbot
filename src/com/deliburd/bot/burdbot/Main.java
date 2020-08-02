@@ -814,7 +814,7 @@ public class Main extends ListenerAdapter {
 			}
 			
 			var startRecordMessage = new MessageBuilder("Starting to record ")
-					.append(member.getEffectiveName())
+					.append(member.getAsMention())
 					.append(" in ")
 					.append(voiceChannel.getName())
 					.append("... I've also sent you a DM containing data about your recording.");
