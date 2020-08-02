@@ -94,7 +94,8 @@ public class Main extends ListenerAdapter {
 		String startRecordDescription = "Starts recording your voice in the voice channel you are in "
 				+ "and DMs an audio file back when the recording is stopped. "
 			+ "The recording goes on until the upload limit for the server is reached. "
-			+ "After the recording is finished, you can choose to send it to the following channels: ";
+			+ "After the recording is finished, you can choose to send it to the channels designated when "
+			+ "you type ``,listwhitelistedchannels``";
 		commandManager.addCommand("startrecording", startRecordDescription)
 				.addArgument(0, "compressed")
 				.addArgument(0, "uncompressed")
