@@ -50,11 +50,19 @@ public class LaNacionSpanishScraper implements Scraper {
 		String sectionClass = "section#cuerpo";
 		String headerContent = "p.capital";
 		String endContent = "section.listado.ademas.redaccion.notas4.floatFix";
-		Element body = story.select(sectionClass).first().children().select(headerContent).first();
-		Elements articleText = new Elements();
+		Element body = story.select(sectionClass).first();
+		
 		if(body == null) {
 			return "";
 		}
+		
+		body = body.children().select(headerContent).first();
+		
+		if(body == null) {
+			return "";
+		}
+		
+		Elements articleText = new Elements();
 		articleText.add(body);
 
 		boolean end = false;
