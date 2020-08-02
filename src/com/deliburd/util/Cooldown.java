@@ -1,7 +1,8 @@
 package com.deliburd.util;
 
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+
 import net.dv8tion.jda.api.entities.User;
 
 public class Cooldown {
@@ -10,7 +11,7 @@ public class Cooldown {
 	 */
 	private long cooldown;
 	
-	private HashMap<User, Long> userCooldownTimeTracker;
+	private ConcurrentHashMap<Long, Long> userCooldownTimeTracker;
 
 	/**
 	 * Initializes the cooldown
@@ -19,7 +20,7 @@ public class Cooldown {
 	 */
 	public Cooldown(long cooldown) {
 		this.cooldown = cooldown;
-		userCooldownTimeTracker = new HashMap<User, Long>(11);
+		userCooldownTimeTracker = new ConcurrentHashMap<Long, Long>(11);
 	}
 
 	/**
@@ -30,7 +31,7 @@ public class Cooldown {
 	public void resetCooldown(User user) {
 		final long currentmilliSecond = Instant.now().toEpochMilli();
 
-		userCooldownTimeTracker.put(user, currentmilliSecond);
+		userCooldownTimeTracker.put(user.getIdLong(), currentmilliSecond);
 
 		if(userCooldownTimeTracker.size() == 11) {
 			pruneUserCooldown();
@@ -77,7 +78,7 @@ public class Cooldown {
 	 * @return Whether the cooldown is up
 	 */
 	public boolean isCooldownOver(User user) {
-		return getCooldownTimeRemaining(user) == 0;
+		return isCooldownOver(user.getIdLong());
 	}
 	
 	/**
@@ -87,7 +88,17 @@ public class Cooldown {
 	 * @return The time remaining in the cooldown in milliseconds. Returns 0 if the cooldown is over or the user never had a cooldown.
 	 */
 	public long getCooldownTimeRemaining(User user) {
-		final Long lastAction = userCooldownTimeTracker.get(user);
+		return getCooldownTimeRemaining(user.getIdLong());
+	}
+	
+	/**
+	 * Gets the amount of time remaining in the cooldown for a user given their ID
+	 * 
+	 * @param userID The user ID to check
+	 * @return The time remaining in the cooldown in milliseconds. Returns 0 if the cooldown is over or the user never had a cooldown.
+	 */
+	private long getCooldownTimeRemaining(long userID) {
+		final Long lastAction = userCooldownTimeTracker.get(userID);
 		
 		// Never had a cooldown or cooldown is over
 		if(lastAction == null || lastAction + cooldown * 1000 <= Instant.now().toEpochMilli()) {
@@ -95,5 +106,15 @@ public class Cooldown {
 		} else {
 			return lastAction + cooldown * 1000 - Instant.now().toEpochMilli();
 		}
+	}
+	
+	/**
+	 * Checks if the cooldown is over for a user given their ID
+	 * 
+	 * @param userID The user ID to check
+	 * @return Whether the cooldown is up
+	 */
+	private boolean isCooldownOver(long userID) {
+		return getCooldownTimeRemaining(userID) == 0;
 	}
 }

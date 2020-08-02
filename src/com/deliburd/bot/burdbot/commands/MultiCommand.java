@@ -11,6 +11,7 @@ import com.deliburd.util.NodeTreeMap;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 public class MultiCommand extends Command {
 	/**
@@ -28,10 +29,15 @@ public class MultiCommand extends Command {
 	 * An empty HashMap means that that argument is variable
 	 */
 	private ArrayList<HashMap<String, String>> argumentAliasLookup;
+	
+	/**
+	 * Holds base command arguments in a tree, linking the ends to a MultiCommandAction
+	 */
 	private NodeTreeMap<String, MultiCommandAction> commandArgumentMap;
 	private MultiCommandAction baseAction;
 	private MultiCommandAction defaultAction;
 	private String[] argumentDescriptions;
+	private boolean hasMultiArgument;
 	private long normalCooldown;
 	private int minArguments = 0;
 	private int maxArguments = 0;
@@ -39,11 +45,12 @@ public class MultiCommand extends Command {
 	/**
 	 * A bot command with additional arguments
 	 * 
+	 * @param prefix The command's prefix
 	 * @param command The command's name
 	 * @param description The description of the command for the help.
 	 */
-	MultiCommand(String command, String description) {
-		super(command, description);
+	MultiCommand(String prefix, String command, String description) {
+		super(prefix, command, description);
 		normalCooldown = commandCooldown.getTotalCooldown();
 		argumentList = new ArrayList<LinkedHashMap<String, String[]>>();
 		argumentAliasLookup = new ArrayList<HashMap<String, String>>();
@@ -80,7 +87,7 @@ public class MultiCommand extends Command {
 	 */
 	public MultiCommand setArgumentDescriptions(String... argumentDescriptions) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
 		}
 		
 		this.argumentDescriptions = argumentDescriptions;
@@ -96,7 +103,7 @@ public class MultiCommand extends Command {
 	 */
 	public MultiCommand setDefaultAction(MultiCommandAction defaultAction) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
 		}
 		
 		this.defaultAction = defaultAction;
@@ -112,7 +119,7 @@ public class MultiCommand extends Command {
 	 */
 	public MultiCommand setBaseAction(MultiCommandAction baseAction) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
 		}
 		
 		this.baseAction = baseAction;
@@ -122,7 +129,7 @@ public class MultiCommand extends Command {
 
 	/**
 	 * Adds an action to a given series of arguments.
-	 * A null argument means it can accept anything.
+	 * An empty string as an argument means it can accept anything or is a multi-argument.
 	 * 
 	 * @param action The action to run when the given set of arguments is typed
 	 * @param arguments The series of arguments to which the action is linked.
@@ -130,30 +137,36 @@ public class MultiCommand extends Command {
 	 */
 	public MultiCommand addFinalArgumentPath(MultiCommandAction action, String... arguments) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalArgumentException("This command has already been finalized.");
+		} else if(arguments == null) {
+			throw new IllegalArgumentException("The arguments for a path cannot be null.");
+		} else if(commandArgumentMap.findValue(arguments) != null) {
+			throw new IllegalArgumentException("This argument path has already been filled.");
 		}
 		
-		if(commandArgumentMap.FindValue(arguments) != null) {
-			throw new RuntimeException("This argument path has already been filled.");
+		for(String arg : arguments) {
+			if(arg == null) {
+				throw new IllegalArgumentException("No argument in the argument path can be null.");
+			}
 		}
 
-		commandArgumentMap.AddValue(arguments, action);
+		commandArgumentMap.addValue(arguments, action);
 		
 		return this;
 	}
 	
 	/**
 	 * Adds an action to a given series of arguments using the default action.
-	 * A null argument means that that argument can be anything.
+	 * An empty string as an argument means it can accept anything or is a multi-argument.
 	 * 
 	 * @param arguments The series of arguments to which the action is linked.
 	 * @return The changed Multicommand
 	 */
 	public MultiCommand addFinalArgumentPath(String... arguments) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
 		} else if(defaultAction == null) {
-			throw new RuntimeException("There is no default action to use. You must use this method with an action specified.");
+			throw new IllegalStateException("There is no default action to use. You must use this method with an action specified.");
 		}
 		
 		addFinalArgumentPath(defaultAction, arguments);
@@ -170,7 +183,7 @@ public class MultiCommand extends Command {
 	 */
 	public MultiCommand addArgument(int argumentPosition) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
 		}
 		
 		// Ensure that the ArrayList has expanded enough to be able to have the map added
@@ -191,9 +204,21 @@ public class MultiCommand extends Command {
 				maxArguments = argumentNumber;
 			}
 		} else {
-			throw new RuntimeException("This argument was already declared.");
+			throw new IllegalArgumentException("This argument was already declared.");
 		}
 		
+		return this;
+	}
+	
+	/**
+	 * Adds a multi-word variable argument as the last argument. This will set the minimum amount of arguments to be at least
+	 * the amount of arguments + 1.
+	 * 
+	 * @return The changed MultiCommand
+	 */
+	public MultiCommand addMultiArgument() {
+		hasMultiArgument = true;
+		maxArguments = Integer.MAX_VALUE;
 		return this;
 	}
 	
@@ -220,7 +245,9 @@ public class MultiCommand extends Command {
 	 */
 	public MultiCommand addArgument(int argumentPosition, String baseArgument, String[] aliases) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
+		} else if(baseArgument == null) {
+			throw new IllegalArgumentException("The base argument cannot be null.");
 		}
 
 		// Ensure that the ArrayList has expanded enough to be able to have the map added
@@ -259,6 +286,10 @@ public class MultiCommand extends Command {
 
 	@Override
 	public void finalizeCommand() {
+		if(hasMultiArgument) {
+			addArgument(argumentAliasLookup.size());
+		}
+		
 		super.finalizeCommand(true);
 		
 		final String description = getCommandDescription().substring(0, getCommandDescription().length() - 3); //Gets rid of the ```;
@@ -268,13 +299,13 @@ public class MultiCommand extends Command {
 		fullDescription.append("\n");
 		
 		for(int i = 0; i < argumentList.size(); i++) {
-			fullDescription.append("\nArgument #");
-			fullDescription.append(i + 1);
-			fullDescription.append(": ");
+			fullDescription.append("\nArgument #")
+					.append(i + 1)
+					.append(": ");
 			
 			if(argumentDescriptions != null && argumentDescriptions.length > i) {
-				fullDescription.append(argumentDescriptions[i]);
-				fullDescription.append("\n");
+				fullDescription.append(argumentDescriptions[i])
+						.append("\n");
 			} else {
 				fullDescription.append("No description provided.\n");
 			}
@@ -293,8 +324,8 @@ public class MultiCommand extends Command {
 					
 					if(aliasArray != null) {
 						for(var alias : aliasArray) {
-							fullDescription.append(", ");
-							fullDescription.append(alias);
+							fullDescription.append(", ")
+									.append(alias);
 						}
 					}
 					
@@ -315,19 +346,37 @@ public class MultiCommand extends Command {
 	 * @param channel The channel to give the message in
 	 */
 	public void giveInvalidArgumentMessage(MessageChannel channel) {
-		StringBuilder invalidArgumentMessage = new StringBuilder("Invalid or no arguments provided.\n");
-		invalidArgumentMessage.append(getCommandDescription());
+		StringBuilder invalidArgumentMessage = new StringBuilder("Invalid or no arguments provided.\n")
+				.append(getCommandDescription());
+		BotUtil.sendMessage(channel, invalidArgumentMessage);
+		commandCooldown.changeTotalCooldown(Constant.DEFAULT_COOLDOWN);
+	}
+	
+	/**
+	 * Gives a message for invalid or no arguments
+	 * 
+	 * @param channel The channel to give the message in
+	 * @param customInvalidMessage A custom invalid message
+	 */
+	public void giveInvalidArgumentMessage(MessageChannel channel, String customInvalidMessage) {
+		StringBuilder invalidArgumentMessage = new StringBuilder(customInvalidMessage)
+				.append("\n")
+				.append(getCommandDescription());
 		BotUtil.sendMessage(channel, invalidArgumentMessage);
 		commandCooldown.changeTotalCooldown(Constant.DEFAULT_COOLDOWN);
 	}
 
 	@Override
-	void onCommandCalled(String[] args, MessageChannel channel, User user) {
+	void onCommandCalled(String[] args, MessageReceivedEvent event) {
+		MessageChannel channel = event.getChannel();
+		User user = event.getAuthor();
+		int maxArgCountWithoutMultiArg = argumentAliasLookup.size();
+		
 		if(args == null) {
 			if(baseAction == null) { // There was no base action specified, so this is invalid
 				giveInvalidArgumentMessage(channel);
 			} else if(commandCooldown.isCooldownOver(user)) {
-				baseAction.OnCommandRun(null, channel);
+				baseAction.OnCommandRun(null, event, this);
 				commandCooldown.changeTotalCooldown(normalCooldown);
 			}
 
@@ -335,46 +384,80 @@ public class MultiCommand extends Command {
 		} else if(args.length < minArguments || args.length > maxArguments) {
 			giveInvalidArgumentMessage(channel);
 			return;
+		} else if(hasMultiArgument && args.length >= maxArgCountWithoutMultiArg) { // A multi-word argument was given.
+			String[] mergedArgs = new String[maxArgCountWithoutMultiArg];
+			StringBuilder multiArgumentBuilder = new StringBuilder();
+			int lastArgumentPosition = maxArgCountWithoutMultiArg - 1;
+			
+			for(int i = 0; i < args.length; i++) {
+				if(i >= lastArgumentPosition) {
+					multiArgumentBuilder.append(args[i]);
+					
+					if(i != args.length - 1) {
+						multiArgumentBuilder.append(" ");
+					}
+				} else {
+					mergedArgs[i] = args[i];
+				}
+			}
+			
+			mergedArgs[lastArgumentPosition] = multiArgumentBuilder.toString();
+			args = mergedArgs;
 		}
 		
-		var parsedArgs = convertAliasesToBaseArgumentsAndParse(args);
+		String[] baseArgs = convertAliasesToBaseArguments(args);
+		String[] parsedArgs = convertAliasesToBaseArgumentsAndParse(args);
 		
-		MultiCommandAction action = commandArgumentMap.FindValue(parsedArgs);
+		MultiCommandAction action = commandArgumentMap.findValue(parsedArgs);
 		
 		if(action == null) {
 			giveInvalidArgumentMessage(channel);
 		} else if(commandCooldown.isCooldownOver(user)) {
-			action.OnCommandRun(args, channel);
+			action.OnCommandRun(baseArgs, event, this);
 			commandCooldown.changeTotalCooldown(normalCooldown);
 		}
 	}
 	
 	/**
+	 * Creates a copy of the given array, converting aliases to base arguments and leaving any
+	 * variable arguments as is.
+	 * 
+	 * @param args The arguments
+	 * @return The new arguments array
+	 */
+	private String[] convertAliasesToBaseArguments(String[] args) {
+		String[] newArgs = args.clone();
+
+		for(int i = 0; i < args.length; i++) {
+			var aliasLookup = argumentAliasLookup.get(i);
+			// Only switches the arguments out if the argument is not a variable argument
+			if(!aliasLookup.isEmpty()) {
+				newArgs[i] = aliasLookup.get(newArgs[i]);
+			}
+		}
+		
+		return newArgs;
+	}
+	
+	/**
 	 * Turns the aliases of an argument array into base arguments
-	 * Then it parses the arguments by making all variable arguments null in a copy of the args array.
+	 * Then it parses the arguments by making all variable arguments blank strings in a copy of the args array.
 	 * 
 	 * @param args The arguments
 	 * @return The parsed arguments
 	 */
 	private String[] convertAliasesToBaseArgumentsAndParse(String[] args) {
-		String[] parsedArgs = null;
+		String[] parsedArgs = args.clone();
 		
 		for(int i = 0; i < args.length; i++) {
 			var aliasLookup = argumentAliasLookup.get(i);
-			// Is not a variable argument
+
+			// Only switches the arguments out if the argument is not a variable argument
 			if(!aliasLookup.isEmpty()) {
-				args[i] = aliasLookup.get(args[i]);
+				parsedArgs[i] = aliasLookup.get(parsedArgs[i]);
 			} else {
-				if(parsedArgs == null) {
-					parsedArgs = args.clone();
-				}
-				
-				parsedArgs[i] = null;
+				parsedArgs[i] = "";
 			}
-		}
-		
-		if(parsedArgs == null) {
-			return args;
 		}
 		
 		return parsedArgs;

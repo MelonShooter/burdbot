@@ -1,85 +1,116 @@
 package com.deliburd.util;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
+import java.util.function.Predicate;
 
 public final class FileUtil {
-	private static String folderPath;
-
 	private FileUtil() {}
-
+	
 	/**
-	 * Empties out a folder
+	 * Empties out a folder. Does nothing if the folder doesn't exist or isn't a directory
 	 * 
 	 * @param folder The folder to empty
 	 */
 	public static void emptyFolder(File folder) {
+		if(folder == null) {
+			throw new IllegalArgumentException("Directory is null.");
+		}
+		
 		File[] files = folder.listFiles();
 
-		if (files == null) { // Supplied argument isn't a directory or is an empty folder.
+		if (files == null) {
 			return;
 		}
+		
+		if(files.length == 0) {
+			folder.delete();
+		}
 
-		folderPath = folder.getPath();
-		recursiveEmptyFolder(files);
-		folderPath = null;
-	}
-
-	/**
-	 * Internal method to empty out the folder
-	 * @param files Array of files in a directory
-	 */
-	private static void recursiveEmptyFolder(File[] files) {
-		for (int i = 0; i < files.length; i++) {
-			if (!files[i].delete()) {
-				if (files[i].isDirectory()) {
-					File[] subFiles = files[i].listFiles();
-
-					if (subFiles.length != 0) {
-						recursiveEmptyFolder(subFiles);
-					} else {
-						try {
-							Files.deleteIfExists(subFiles[i].toPath());
-						} catch (IOException e) {
-							continue;
-						}
-					}
-				} else {
-					try {
-						Files.deleteIfExists(files[i].toPath());
-					} catch (IOException e) {
-						continue;
-					}
-				}
+		for(int i = 0; i < files.length; i++) {
+			if(files[i].isDirectory()) {
+				deleteFolder(files[i]);
 			} else {
-				if (files[i].getParent() != null && !files[i].getParent().equals(folderPath)) {
-					files[i].getParentFile().delete();
-				}
+				files[i].delete();
 			}
 		}
 	}
 
 	/**
-	 * Checks whether a folder is empty
-	 * @param folder The folder to check
-	 * @return whether the folder is empty
+	 * Recursively deletes a folder. Does nothing if the folder doesn't exist or isn't a directory
+	 * 
+	 * @param folder The folder to delete
+	 */
+	public static void deleteFolder(File folder) {
+		if(folder == null) {
+			throw new IllegalArgumentException("Directory is null.");
+		}
+		
+		File[] files = folder.listFiles();
+
+		if (files == null) {
+			return;
+		}
+		
+		if(files.length == 0) {
+			folder.delete();
+		}
+
+		for(int i = 0; i < files.length; i++) {
+			if(files[i].isDirectory()) {
+				deleteFolder(files[i]);
+			} else {
+				files[i].delete();
+			}
+		}
+		
+		folder.delete();
+	}
+
+	/**
+	 * Returns whether a folder is empty
+	 * 
+	 * @param folder The folder to check. Must not be null and must be a directory.
+	 * @return Whether the folder is empty or not
 	 */
 	public static boolean isFolderEmpty(File folder) {
-		if (!folder.isDirectory()) {
-			throw new UncheckedIOException("Argument supplied is a file or doesn't exist.", new IOException());
+		if (folder == null || !folder.isDirectory()) {
+			throw new IllegalArgumentException("Argument supplied is null or a file or doesn't exist.");
 		}
 
 		return folder.list().length == 0;
 	}
 
 	/**
-	 * Checks whether a folder is empty or doesn't exist
-	 * @param folder The folder to check
-	 * @return Whether the folder is empty or doesn't exist
+	 * Returns whether a folder is empty or does not exist
+	 * 
+	 * @param folder The folder to check. Must not be null.
+	 * @return Whether the folder is empty or does not exist
 	 */
 	public static boolean isFolderEmptyOrDoesNotExist(File folder) {
+		if(folder == null) {
+			throw new IllegalArgumentException("Argument supplied is null.");
+		}
+		
 		return !folder.exists() || isFolderEmpty(folder);
+	}
+
+	/**
+	 * Shallowly deletes files in the specified folder with a condition
+	 * 
+	 * @param baseFolder The folder to delete files in
+	 * @param condition The condition to delete files with. Null for no condition.
+	 */
+	public static void deleteFiles(File baseFolder, Predicate<File> condition) {
+		if(baseFolder == null || !baseFolder.isDirectory()) {
+			throw new IllegalArgumentException("The base folder specified must be a folder and can't be null.");
+		}
+		
+		File[] files = baseFolder.listFiles();
+		
+		for(var file : files) {
+			if(file.isFile() && (condition == null || condition.test(file))) {
+				file.delete();
+			}
+		}
 	}
 }

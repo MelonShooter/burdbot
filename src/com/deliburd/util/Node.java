@@ -1,37 +1,56 @@
 package com.deliburd.util;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class Node<K, V> {
-	/**
-	 * The value associated with the node
-	 */
-	private V value;
-	
+public class Node<K, V> {	
 	/**
 	 * The children node that the node holds
 	 */
-	private HashMap<K, Node<K, V>> nodeChildren;
-
+	private final ConcurrentHashMap<K, Node<K, V>> nodeChildren;
+	
 	/**
-	 * Creates a node with children but no value associated with it
+	 * The parent node of this node.
 	 */
-	Node() {
-		nodeChildren = new HashMap<K, Node<K,V>>();
+	private final Node<K, V> parentNode;
+	
+	/**
+	 * The value associated with the node
+	 */
+	private volatile V value;
+	
+	/**
+	 * Creates a node without a value associated with it
+	 */
+	Node(Node<K, V> parent) {
+		nodeChildren = new ConcurrentHashMap<K, Node<K,V>>();
+		parentNode = parent;
 	}
 	
 	/**
-	 * Creates a node either with or without children but with a value associated with it
-	 * 
-	 * @param value The value associated with the node
-	 * @param hasChildren Whether the node will have children
+	 * Creates a node without a value associated with it.
+	 * The internal ConcurrentHashMap will have the given initial size
 	 */
-	Node(V value, boolean hasChildren) {
-		this.value = value;
-		
-		if(!hasChildren) {
-			nodeChildren = new HashMap<K, Node<K,V>>();
-		}
+	Node(Node<K, V> parent, int initialSize) {
+		nodeChildren = new ConcurrentHashMap<K, Node<K,V>>(initialSize);
+		parentNode = parent;
+	}
+	
+	/**
+	 * Gets a child node given the identifier
+	 * @param nodeIdentifier The node identifier
+	 * @return The node. Null if not found.
+	 */
+	public Node<K, V> getChildNode(K nodeIdentifier) {
+		return nodeChildren.get(nodeIdentifier);
+	}
+	
+	/**
+	 * Gets the parent node
+	 * 
+	 * @return The parent node of this node. Null if it's a top-level node.
+	 */
+	public Node<K, V> getParentNode() {
+		return parentNode;
 	}
 	
 	/**
@@ -39,7 +58,7 @@ public class Node<K, V> {
 	 * 
 	 * @return The value associated with the node. Will be null if not assigned one.
 	 */
-	V getNodeValue() {
+	public V getNodeValue() {
 		return value;
 	}
 	
@@ -61,13 +80,32 @@ public class Node<K, V> {
 	void addChildNode(K nodeIdentifier, Node<K, V> childNode) {
 		nodeChildren.put(nodeIdentifier, childNode);
 	}
-	
+
 	/**
-	 * Gets a child node given the identifier
-	 * @param nodeIdentifier The node identifier
-	 * @return The node. Null if not found.
+	 * Creates a copy of the current node
+	 * 
+	 * @param sizeIncrease The size to increase the internal ConcurrentHashMap by
+	 * @param newParent The new node to parent the copied node to
+	 * @return A copy of the node
 	 */
-	Node<K, V> getChildNode(K nodeIdentifier) {
-		return nodeChildren.get(nodeIdentifier);
+	Node<K, V> copy(int sizeIncrease, Node<K, V> newParent) {
+		if(sizeIncrease < 0) {
+			throw new IllegalArgumentException("The size increase must be at least 0.");
+		}
+		
+		int newSize = nodeChildren.size();
+		
+		if(newSize <= Integer.MAX_VALUE - sizeIncrease) {
+			newSize += sizeIncrease;
+		}
+		
+		Node<K, V> newNode = new Node<K, V>(newParent, newSize);
+		newNode.setNodeValue(value);
+
+		nodeChildren.forEach(1, (key, node) -> {
+			newNode.addChildNode(key, node.copy(sizeIncrease, newNode));
+		});
+		
+		return newNode;
 	}
 }

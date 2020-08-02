@@ -1,27 +1,36 @@
 package com.deliburd.bot.burdbot.commands;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 import com.deliburd.bot.burdbot.Constant;
+import com.deliburd.util.BotUtil;
 import com.deliburd.util.Cooldown;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 public abstract class Command {
+	protected final ArrayList<String> commandAliases;
 	protected Cooldown commandCooldown;
 	protected String commandDescription;
-	private String shortCommandDescription;
-	protected ArrayList<String> commandAliases;
 	protected boolean isFinalized = false;
+	private final String commandName;
+	private final String shortCommandDescription;
+	private final String commandPrefix;
+	private Permission[] permissionRestrictions;
 
 	/**
 	 * A bot command
 	 * 
+	 * @prefix The command's prefix
 	 * @param command The command's name
 	 * @param description The description of the command for the help.
 	 */
-	Command(String command, String description) {
+	Command(String prefix, String command, String description) {
+		commandName = command;
+		commandPrefix = prefix;
 		commandAliases = new ArrayList<String>();
 		commandAliases.add(command);
 		commandDescription = description;
@@ -32,11 +41,11 @@ public abstract class Command {
 	/**
 	 * Sets the cooldown for the command
 	 * @param newCooldown The cooldown in seconds
-	 * @return The command
+	 * @return The modified command
 	 */
 	public Command setCooldown(long newCooldown) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
 		}
 		
 		commandCooldown.changeTotalCooldown(newCooldown);
@@ -46,14 +55,31 @@ public abstract class Command {
 	/**
 	 * Sets the cooldown for the command
 	 * @param newCooldown The cooldown object
-	 * @return The command
+	 * @return The modified command
 	 */
 	public Command setCooldown(Cooldown newCooldown) {
 		if(isFinalized) {
-			throw new RuntimeException("This command has already been finalized.");
+			throw new IllegalStateException("This command has already been finalized.");
 		}
 		
 		commandCooldown = newCooldown;
+		return this;
+	}
+	
+	/**
+	 * Sets restrictions on who can use the command
+	 * 
+	 * @param restrictions All of the cumulative permissions required to be able to use the command
+	 * @return The modified command
+	 */
+	public Command setPermissionRestrictions(Permission... restrictions) {
+		if(isFinalized) {
+			throw new IllegalStateException("This command has already been finalized.");
+		} else if(restrictions.length == 0) {
+			throw new IllegalArgumentException("The restrictions array cannot be blank.");
+		}
+		
+		permissionRestrictions = restrictions;
 		return this;
 	}
 	
@@ -78,15 +104,15 @@ public abstract class Command {
 		final var commandNames = getCommandNames();
 		final long cooldownTime = commandCooldown.getTotalCooldown();
 		
-		description.append(Constant.COMMAND_PREFIX_WITH_SPACE);
-		description.append(getCommandNames().get(0));
+		description.append(Constant.COMMAND_PREFIX)
+				.append(getCommandNames().get(0));
 		
 		if(commandNames.size() > 1) {
 			description.append("\nAliases: ");
 	
 			for(int i = 1; i < commandNames.size(); i++) {
-				description.append(Constant.COMMAND_PREFIX_WITH_SPACE);
-				description.append(commandNames.get(i));
+				description.append(Constant.COMMAND_PREFIX)
+						.append(commandNames.get(i));
 				
 				if(i != commandNames.size() - 1) {
 					description.append("; ");
@@ -94,12 +120,12 @@ public abstract class Command {
 			}
 		}
 		
-		description.append("\nDescription: ");
-		description.append(getShortCommandDescription());
-		description.append("\nCooldown: ");
-		description.append(cooldownTime);
-		description.append(" second");
-		description.append(cooldownTime == 1 ? "```" : "s```" );
+		description.append("\nDescription: ")
+				.append(getShortCommandDescription())
+				.append("\nCooldown: ")
+				.append(cooldownTime)
+				.append(" second")
+				.append(cooldownTime == 1 ? "```" : "s```" );
 		
 		commandDescription = description.toString();
 		isFinalized = !isOverriden;
@@ -112,7 +138,7 @@ public abstract class Command {
 	public boolean isFinalized() {
 		return isFinalized;
 	}
-	
+
 	/**
 	 * Gets the command's name and aliases
 	 * 
@@ -126,6 +152,7 @@ public abstract class Command {
 	 * Adds additional aliases to the base command
 	 * 
 	 * @param aliases The additional aliases
+	 * @return The modified command
 	 */
 	public Command addCommandNames(String... aliases) {
 		if(isFinalized) {
@@ -139,9 +166,33 @@ public abstract class Command {
 		return this;
 	}
 	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((commandName == null) ? 0 : commandName.hashCode());
+		result = prime * result + ((commandPrefix == null) ? 0 : commandPrefix.hashCode());
+		
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if(this == obj) {
+			return true;
+		} else if(obj == null || !(obj instanceof Command)) {
+			return false;
+		}
+		
+		Command command = (Command) obj;
+		
+		return Objects.equals(commandName, command.commandName) &&
+				Objects.equals(commandPrefix, command.commandPrefix);
+	}
+
 	private void registerAlias(String alias) {
 		commandAliases.add(alias);
-		CommandManager.createAlias(this, alias);
+		CommandManager.getManager(commandPrefix).createAlias(this, alias);
 	}
 	
 	/** 
@@ -172,10 +223,29 @@ public abstract class Command {
 	}
 	
 	/**
+	 * Gets the permission restrictions on this command. Null if there are none
+	 * 
+	 * @return The permissions required to run this command
+	 */
+	public Permission[] getPermissionRestrictions() {
+		return permissionRestrictions;
+	}
+	
+	/**
+	 * Gives a message for insufficient permissions
+	 * 
+	 * @param channel The channel to give the message in
+	 */
+	public void giveInsufficientPermissionsMessage(MessageChannel channel) {
+		String insufficientPermissionsMessage = "You don't have the sufficient permissions to run this command";
+		BotUtil.sendMessage(channel, insufficientPermissionsMessage);
+	}
+
+	/**
 	 * Called when the command is run
 	 * 
 	 * @param args Arguments associated with the command, if any. Will be null if there are none.
-	 * @param messageChannel The channel that the message was posted in
+	 * @param event The message received event
 	 */
-	abstract void onCommandCalled(String[] args, MessageChannel messageChannel, User user);
+	abstract void onCommandCalled(String[] args, MessageReceivedEvent event);
 }

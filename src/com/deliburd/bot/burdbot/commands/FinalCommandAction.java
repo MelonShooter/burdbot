@@ -1,7 +1,7 @@
 package com.deliburd.bot.burdbot.commands;
 
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 public interface FinalCommandAction {
-	public void OnCommandRun(MessageChannel channel);
+	public void OnCommandRun(MessageReceivedEvent event);
 }
