@@ -457,6 +457,8 @@ public class Main extends ListenerAdapter {
 						return "<" + channelTemplateIterator.next() + ">";
 					});
 					
+					formattedTemplate = RecorderConstant.NAME_REPLACEMENT_PATTERN.matcher(formattedTemplate).replaceAll("@USER");
+					
 					channelInfoBuilder.append("\n").appendCodeLine(formattedTemplate);
 				}
 			}

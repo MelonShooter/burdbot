@@ -33,4 +33,9 @@ public class RecorderConstant {
 	 * The delay in milliseconds to check for silence and update it if necessary
 	 */
 	public static final int AUDIO_FILE_SILENCE_CHECK_DELAY = 60 * 1000; // 1 minute
+
+	/**
+	 * A pattern to find all instances of %p, but not %%p
+	 */
+	public static final Pattern NAME_REPLACEMENT_PATTERN = Pattern.compile("(?<!%)%p");
 }

@@ -99,7 +99,6 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 	
 	private final String CANCEL_SEND_MESSAGE = "File sending cancelled... To send your file somewhere again, type ``" + FILE_SEND_COMMAND + "``.";
 	private final String NO_CHANNEL_MESSAGE = "It appears there are no channels we can send this to. Contact DELIBURD if you think this is a mistake.";
-	private final Pattern NAME_REPLACEMENT_PATTERN = Pattern.compile("(?<!%)%p");
 	private final Pattern ID_PATTERN = Pattern.compile("^\\d+");
 	
 	private AudioReceiverHandler() {
@@ -780,7 +779,7 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 			String displayTemplate = templateReplacementMatcher.replaceAll(match -> {
 				return "<" + nameIterator.next().toUpperCase() + ">";
 			});
-			Matcher nameReplacer = NAME_REPLACEMENT_PATTERN.matcher(displayTemplate);
+			Matcher nameReplacer = RecorderConstant.NAME_REPLACEMENT_PATTERN.matcher(displayTemplate);
 			String fullTemplate = nameReplacer.replaceAll("@" + user.getName());
 			String templateToFill = nameReplacer.reset(templateArray[0]).replaceAll(user.getAsMention());
 			MessageBuilder templateBuilder = new MessageBuilder();
