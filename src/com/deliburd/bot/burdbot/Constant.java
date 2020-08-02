@@ -54,4 +54,9 @@ public class Constant {
 	 * The bot's name
 	 */
 	public static final String BOT_NAME = "BurdBot";
+	
+	/**
+	 * Deliburd's user ID
+	 */
+	public static final long DELIBURD_ID = 367538590520967181L;
 }

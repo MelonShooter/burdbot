@@ -205,7 +205,8 @@ public class CommandManager extends ListenerAdapter {
 	
 	private boolean hasPermission(Command command, MessageReceivedEvent event) {
 		Permission[] restrictions = command.getPermissionRestrictions();
-		if(restrictions == null || event.getMember().hasPermission(restrictions)) {
+		boolean isDELIBURD = event.getAuthor().getIdLong() == Constant.DELIBURD_ID;
+		if(restrictions == null || event.getMember().hasPermission(restrictions) || isDELIBURD) {
 			return true;
 		}
 		
