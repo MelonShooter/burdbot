@@ -567,18 +567,18 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 	private void addListenerWithMember(long userID, PrivateChannel channel, JsonNode templateNode, Member member) {
 		Guild server = member.getGuild();
 		LinkedHashMap<Long, String> serverAndChannelNames = new LinkedHashMap<Long, String>(templateNode.size() + 1);
-		var channels = templateNode.fieldNames();
-		boolean isFirst = true;
+		var channels = templateNode.fields();
 		
 		serverAndChannelNames.put(server.getIdLong(), null);
 		
 		StringBuilder initialMessage = new StringBuilder("``What channel would you like the full audio to be sent to?``\n"
 				+ "If you would not like to send your audio file anywhere, type ``" + CANCEL_SEND_COMMAND + "``.\nYour file "
 				+ "will be kept for a total of 24 hours or until they're sent and then will be permanently deleted afterwards.\n"
-				+ "The whitelisted channel(s) is/are: ");
+				+ "The whitelisted channel(s) is/are:\n");
 		
 		while(channels.hasNext()) {
-			String channelIDString = channels.next();
+			var currentChannelEntry = channels.next();
+			String channelIDString = currentChannelEntry.getKey();
 			Long channelID = NumberUtil.stringToLong(channelIDString);
 			
 			if(channelID == null) {
@@ -590,19 +590,22 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 					continue;
 				}
 				
+				JsonNode templateArray = currentChannelEntry.getValue();
+				
+				if(!templateArray.isArray() || templateArray.isEmpty() || !templateArray.get(0).isTextual()) {
+					continue;
+				}
+				
 				String validChannelName = validChannel.getName();
 
 				if (validChannelName == null) {
 					continue;
 				}
 
-				if (isFirst) {
-					isFirst = false;
-				} else {
-					initialMessage.append(", ");
-				}
-
-				initialMessage.append(validChannel.getAsMention());
+				initialMessage.append(validChannel.getAsMention())
+						.append(" - ``")
+						.append(templateArray.get(0).asText())
+						.append("``\n");
 				serverAndChannelNames.put(validChannel.getIdLong(), validChannelName);
 			}
 		}
@@ -721,7 +724,7 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 			return;
 		}
 
-		if(templateArray == null) {
+		if(templateArray == null || templateArray.length == 0) {
 			String deWhitelistedMessage = "It appears this channel is no longer whitelisted.";
 			recreateChannelListener(selfResponse, channel, deWhitelistedMessage, server);
 			return;
@@ -733,7 +736,7 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 				.append(foundChannel.getAsMention())
 				.append(". ");
 		
-		if(templateArray.length == 0) {
+		if(templateArray.length == 1) {
 			addNoTemplateResponse(serverID, channelID, channel, userID, selectedChannelText);
 		} else {
 			long expirationTime = getFileExpirationTime(server, user.getId(), TimeUnit.MILLISECONDS);
@@ -745,7 +748,7 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 			}
 			
 			selectedChannelText.append("The template for this channel is:```")
-					.append(templateArray[0])
+					.append(templateArray[1])
 					.append("```Type ``continue`` to use this template.\n"
 							+ "If you would not like to use this template and want to make your own message, type ``notemplate``.\n"
 							+ "You can also type ``cancel`` to not send your file.\nDuring any point as "
@@ -765,8 +768,8 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 			
 			// Separates the names from the questions and puts the values into different arrays
 			
-			for(int i = 1; i < templateArray.length; i++) {
-				if(i % 2 == 1) {
+			for(int i = 2; i < templateArray.length; i++) {
+				if(i % 2 == 0) {
 					names.add(templateArray[i]);
 				} else {
 					questions.add(templateArray[i]);
@@ -781,7 +784,7 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 			});
 			Matcher nameReplacer = RecorderConstant.NAME_REPLACEMENT_PATTERN.matcher(displayTemplate);
 			String fullTemplate = nameReplacer.replaceAll("@" + user.getName());
-			String templateToFill = nameReplacer.reset(templateArray[0]).replaceAll(user.getAsMention());
+			String templateToFill = nameReplacer.reset(templateArray[1]).replaceAll(user.getAsMention());
 			MessageBuilder templateBuilder = new MessageBuilder();
 			
 			BiFunction<MessageReceivedEvent, MessageResponse, Boolean> templateSucessCallback = (e, r) -> {

@@ -345,15 +345,15 @@ public class Main extends ListenerAdapter {
 		
 		MessageBuilder templateInfoBuilder = new MessageBuilder(getChannelTemplateData(event, args[0], templateNode));
 		if(templateNode.isArray()) {
-			if(templateNode.size() > 2) {
-				templateInfoBuilder.append("\nTemplate questions:");
+			if(templateNode.size() > 3) {
+				templateInfoBuilder.append("Template questions:");
 				
-				for(int i = 2; i < templateNode.size(); i += 2) {
+				for(int i = 3; i < templateNode.size(); i += 2) {
 					String templateQuestion = templateNode.get(i).asText();
 					templateInfoBuilder.append("\n").appendCodeLine(templateQuestion);
 				}
 			} else {
-				templateInfoBuilder.append("\nNo template questions.");
+				templateInfoBuilder.append("No template questions.");
 			}
 		}
 		
@@ -389,7 +389,7 @@ public class Main extends ListenerAdapter {
 			whitelistedChannelListBuilder.append(channelLine);
 		}
 		
-		whitelistedChannelListBuilder.append("\nFor more info on a specific template, use ``")
+		whitelistedChannelListBuilder.append("For more info on a specific template, use ``")
 				.append(Constant.COMMAND_PREFIX)
 				.append("gettemplateinfo``");
 
@@ -414,26 +414,27 @@ public class Main extends ListenerAdapter {
 			TextChannel foundChannel = event.getJDA().getTextChannelById(channelID);
 			
 			if(foundChannel == null) {
-				channelInfoBuilder.append("Deleted channel:");
+				channelInfoBuilder.append("Deleted channel");
 			} else {
 				channelInfoBuilder.append(foundChannel);
 				
 				if(!BotUtil.hasWritePermission(foundChannel)) {
 					channelInfoBuilder.append(" (I don't have permission to write in this channel)");
 				}
-				
-				channelInfoBuilder.append(":");
 			}
 		}
 		
-		if(channelTemplate.isArray()) {
-			if(channelTemplate.isEmpty()) {
-				channelInfoBuilder.appendCodeLine("\nNo template");
+		if(channelTemplate.isArray() && !channelTemplate.isEmpty()) {
+			channelInfoBuilder.append(" - ")
+					.append(channelTemplate.get(0).asText());
+			
+			if(channelTemplate.size() == 1) {
+				channelInfoBuilder.appendCodeLine("\nNo template\n");
 			} else {
-				var templateInfo = new ArrayList<String>(channelTemplate.size() / 2 + 1);
-				templateInfo.add(channelTemplate.get(0).asText());
+				var templateInfo = new ArrayList<String>(channelTemplate.size() / 2 + 2);
+				templateInfo.add(channelTemplate.get(1).asText());
 				
-				for(int i = 1; i < channelTemplate.size(); i += 2) {
+				for(int i = 2; i < channelTemplate.size(); i += 2) {
 					String replacementName = channelTemplate.get(i).asText().toUpperCase();
 					
 					if(replacementName.isBlank()) {
@@ -460,15 +461,17 @@ public class Main extends ListenerAdapter {
 					
 					formattedTemplate = RecorderConstant.NAME_REPLACEMENT_PATTERN.matcher(formattedTemplate).replaceAll("@USER");
 					
-					channelInfoBuilder.append("\n").appendCodeLine(formattedTemplate);
+					channelInfoBuilder.append("\n")
+							.appendCodeLine(formattedTemplate)
+							.append("\n");
 				}
 			}
+			
+			channelInfoBuilder.append("\n");
 		} else {
-			channelInfoBuilder.appendCodeLine("Malformed template (Contact DELIBURD)");
+			channelInfoBuilder.appendCodeLine(":\nMalformed template (Contact DELIBURD)");
 			ErrorLogger.LogIssue("Malformed template when someone tried listing them.");
 		}
-		
-		channelInfoBuilder.append("\n");
 		
 		return channelInfoBuilder.getStringBuilder().toString();
 	}
@@ -512,8 +515,8 @@ public class Main extends ListenerAdapter {
 	 * @param command The command's MultiCommand object
 	 */
 	private static void addChannelToWhitelist(String[] args, MessageReceivedEvent event, MultiCommand command) {
+		long userID = event.getMember().getIdLong();
 		Long channelID = NumberUtil.stringToLong(args[0]);
-		long serverID = event.getGuild().getIdLong();
 		MessageChannel channel = event.getChannel();
 		
 		if(channelID == null || event.getJDA().getTextChannelById(channelID) == null) {
@@ -521,75 +524,73 @@ public class Main extends ListenerAdapter {
 			return;
 		}
 
+		int replacementCount;
+		
+		ArrayList<String> replacements;
+		String replacementString;
+		
 		if(args.length == 1) {
-			String[] templateArray = {};
-			boolean success = ServerConfig.writeToConfig("templates", serverID, templateArray, channelID.toString());
-
-			if(success) {
-				BotUtil.sendMessage(channel, "Template added.", event.getAuthor().getIdLong());
-			} else {
-				BotUtil.sendMessage(channel, Constant.ERROR_MESSAGE, event.getAuthor().getIdLong());
-			}
-			
-			return;
+			replacementString = null;
+			replacementCount = 0;
+			replacements = new ArrayList<String>(1);
+		} else {
+			replacementString = args[1];
+			replacementCount = (int) RecorderConstant.REPLACEMENT_PATTERN.matcher(replacementString).results().count();
+			replacements = new ArrayList<String>(replacementCount * 2 + 2);
 		}
 		
-		String replacementString = args[1];
+		boolean noReplacements = replacementCount == 0;
 		
-		if(args[1].isBlank()) {
-			command.giveInvalidArgumentMessage(channel, "This template is invalid.");
-			return;
-		}
-		
-		long userID = event.getMember().getIdLong();
-		int replacementCount = (int) RecorderConstant.REPLACEMENT_PATTERN.matcher(replacementString).results().count();
 		String cancelComment = "If something isn't correct, type cancel and retype the command.";
 		String templateMessage = "Please type the **question** you want to ask for the user to replace the %s replacement. "
 				+ cancelComment;
 		String nameMessage = "Please type the **name** you want to show for the user in the template for the %s replacement. "
 				+ cancelComment;
 		String firstTemplateMessage;
-		ArrayList<String> replacements;
-		Pair<String, ArrayList<String>> channelTemplates;
 		
-		if(replacementCount == 0) {
-			String[] templateArray = {replacementString};
-			
-			boolean success = ServerConfig.writeToConfig("templates", serverID, templateArray, channelID.toString());
+		Pair<String, ArrayList<String>> channelTemplates = new Pair<String, ArrayList<String>>(channelID.toString(), replacements);
+		
+		String channelDescriptionQuestion = "Please give a brief description of this channel.";
 
-			if(success) {
-				BotUtil.sendMessage(event.getChannel(), "Template added.", event.getAuthor().getIdLong());
-			} else {
-				BotUtil.sendMessage(event.getChannel(), Constant.ERROR_MESSAGE, event.getAuthor().getIdLong());
-			}
+		var descriptionResponse = new MessageResponse(channelDescriptionQuestion, channel, userID, (e, r) -> templateCallback(e, r, channelTemplates, noReplacements), "")
+				.setCancelResponses("cancel")
+				.setTimeout(120, TimeUnit.SECONDS);
+		
+		if(noReplacements || replacementCount == 0) {
+			descriptionResponse.build();
+			MessageResponseQueue.getQueue().addMessageResponse(descriptionResponse);
 			return;
-		} else {
-			replacements = new ArrayList<String>(replacementCount * 2 + 1);
-			channelTemplates = new Pair<String, ArrayList<String>>(channelID.toString(), replacements);
-			String confirmationMessage = new StringBuilder("I detected ")
-					.append(replacementCount)
-					.append(" place(s) where you want the user to fill in text. ")
-					.toString();
-			
-			firstTemplateMessage = confirmationMessage + "\n" + String.format(nameMessage, NumberUtil.toOrdinalNumber(1));
-			replacements.add(replacementString);
 		}
 		
-		boolean isOnlyCallback = replacementCount == 1;
+		if(args[1].isBlank()) {
+			command.giveInvalidArgumentMessage(channel, "This template is invalid.");
+			return;
+		}
 		
-		var templateResponses = new MessageResponse(firstTemplateMessage, channel, userID, (e, r) -> templateCallback(e, r, channelTemplates, false), "")
+		String confirmationMessage = new StringBuilder("I detected ")
+				.append(replacementCount)
+				.append(" place(s) where you want the user to fill in text. ")
+				.toString();
+		firstTemplateMessage = confirmationMessage + "\n" + String.format(nameMessage, NumberUtil.toOrdinalNumber(1));
+		
+		boolean isOnlyCallback = replacementCount == 1;
+		var templateResponses = new MessageResponse(firstTemplateMessage, channel, userID, (e, r) -> {
+			replacements.add(replacementString);
+			return templateCallback(e, r, channelTemplates, false);
+		}, "")
 				.setCancelResponses("cancel")
-				.setCancelMessage("Cancelling...")
-				.setTimeout(120, TimeUnit.SECONDS);
+				.setTimeout(120, TimeUnit.SECONDS)
+				.build();
+		
+		descriptionResponse.chainResponse(templateResponses);
 		
 		String firstTemplateBody = String.format(templateMessage, NumberUtil.toOrdinalNumber(1));
 		var firstresponse = new MessageResponse(firstTemplateBody, channel, userID, (e, r) -> templateCallback(e, r, channelTemplates, isOnlyCallback), "")
 				.setTimeout(120, TimeUnit.SECONDS)
-				.setCancelMessage("Cancelling...")
 				.setCancelResponses("cancel")
 				.build();
 		
-		templateResponses.chainResponse(firstresponse);
+		descriptionResponse.chainResponse(firstresponse);
 		
 		for(int i = 1; i < replacementCount; i++) {
 			boolean isLast;
@@ -606,7 +607,7 @@ public class Main extends ListenerAdapter {
 					.setCancelResponses("cancel")
 					.build();
 			
-			templateResponses.chainResponse(nameResponse);
+			descriptionResponse.chainResponse(nameResponse);
 			
 			String currentTemplateMessage = String.format(templateMessage, NumberUtil.toOrdinalNumber(i + 1));
 			var templateResponse = new MessageResponse(currentTemplateMessage, channel, userID, (e, r) -> templateCallback(e, r, channelTemplates, isLast), "")
@@ -614,12 +615,12 @@ public class Main extends ListenerAdapter {
 					.setCancelResponses("cancel")
 					.build();
 			
-			templateResponses.chainResponse(templateResponse);
+			descriptionResponse.chainResponse(templateResponse);
 		}
 		
-		templateResponses.build();
+		descriptionResponse.build();
 		
-		MessageResponseQueue.getQueue().addMessageResponse(templateResponses);
+		MessageResponseQueue.getQueue().addMessageResponse(descriptionResponse);
 	}
 	
 	/**
@@ -646,16 +647,22 @@ public class Main extends ListenerAdapter {
 		if(isLast) {
 			String[] templateArray = configList.toArray(String[]::new);
 			long serverID = event.getGuild().getIdLong();
-			boolean success = ServerConfig.writeToConfig("templates", serverID, templateArray, replacements.getKey());
-			
-			if(success) {
-				BotUtil.sendMessage(event.getChannel(), "Template added.", event.getAuthor().getIdLong());
-			} else {
-				BotUtil.sendMessage(event.getChannel(), Constant.ERROR_MESSAGE, event.getAuthor().getIdLong());
-			}
+			long userID = event.getAuthor().getIdLong();
+			long whitelistChannelID = NumberUtil.stringToLong(replacements.getKey());
+			completeTemplate(event, whitelistChannelID, serverID, userID, templateArray);
 		}
 		
 		return true;
+	}
+	
+	private static void completeTemplate(MessageReceivedEvent event, long channelID, long serverID, long userID, String[] templateArray) {
+		boolean success = ServerConfig.writeToConfig("templates", serverID, templateArray, Long.toString(channelID));
+
+		if(success) {
+			BotUtil.sendMessage(event.getChannel(), "Template added.", userID);
+		} else {
+			BotUtil.sendMessage(event.getChannel(), Constant.ERROR_MESSAGE, userID);
+		}
 	}
 	
 	/**
