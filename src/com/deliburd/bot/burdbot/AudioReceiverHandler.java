@@ -664,7 +664,7 @@ public class AudioReceiverHandler extends ListenerAdapter implements AudioReceiv
 		while(channelIDIterator.hasNext()) {
 			var channelEntry = channelIDIterator.next();
 			TextChannel textChannel = server.getTextChannelById(channelEntry.getKey());
-			String textChannelName = channelEntry.getValue();
+			String textChannelName = "#" + channelEntry.getValue();
 			
 			if(textChannelName.contains(message)) {
 				if(!isValidWhitelistedChannel(member, textChannel)) {
