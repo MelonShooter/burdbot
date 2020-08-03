@@ -490,7 +490,7 @@ public class Main extends ListenerAdapter {
 		long serverID = event.getGuild().getIdLong();
 		MessageChannel channel = event.getChannel();
 		
-		if(channelID == null || event.getJDA().getTextChannelById(channelID) == null) {
+		if(channelID == null) {
 			command.giveInvalidArgumentMessage(channel, "The channel ID is invalid. Make sure it's a real text channel ID.");
 			return;
 		}
