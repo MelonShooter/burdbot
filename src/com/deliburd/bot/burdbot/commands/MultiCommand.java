@@ -405,8 +405,13 @@ public class MultiCommand extends Command {
 			args = mergedArgs;
 		}
 		
-		String[] baseArgs = convertAliasesToBaseArguments(args);
-		String[] parsedArgs = convertAliasesToBaseArgumentsAndParse(args);
+		String[] baseArgs = convertAliasesToBaseArguments(args, channel);
+		
+		if(baseArgs == null) {
+			return;
+		}
+		
+		String[] parsedArgs = convertAliasesToBaseArgumentsAndParse(args, channel);
 		
 		MultiCommandAction action = commandArgumentMap.findValue(parsedArgs);
 		
@@ -423,16 +428,24 @@ public class MultiCommand extends Command {
 	 * variable arguments as is.
 	 * 
 	 * @param args The arguments
-	 * @return The new arguments array
+	 * @param channel The channel to send a message to if something goes wrong
+	 * @return The new arguments array. Null if something went wrong.
 	 */
-	private String[] convertAliasesToBaseArguments(String[] args) {
+	private String[] convertAliasesToBaseArguments(String[] args, MessageChannel channel) {
 		String[] newArgs = args.clone();
 
 		for(int i = 0; i < args.length; i++) {
 			var aliasLookup = argumentAliasLookup.get(i);
 			// Only switches the arguments out if the argument is not a variable argument
 			if(!aliasLookup.isEmpty()) {
-				newArgs[i] = aliasLookup.get(newArgs[i]);
+				String baseArgument = aliasLookup.get(newArgs[i]);
+				
+				if(baseArgument == null) {
+					giveInvalidArgumentMessage(channel);
+					return null;
+				}
+				
+				newArgs[i] = baseArgument;
 			}
 		}
 		
@@ -444,9 +457,10 @@ public class MultiCommand extends Command {
 	 * Then it parses the arguments by making all variable arguments blank strings in a copy of the args array.
 	 * 
 	 * @param args The arguments
-	 * @return The parsed arguments
+	 * @param channel The channel to send a message to if something goes wrong
+	 * @return The parsed arguments. Null if something went wrong.
 	 */
-	private String[] convertAliasesToBaseArgumentsAndParse(String[] args) {
+	private String[] convertAliasesToBaseArgumentsAndParse(String[] args, MessageChannel channel) {
 		String[] parsedArgs = args.clone();
 		
 		for(int i = 0; i < args.length; i++) {
@@ -454,7 +468,14 @@ public class MultiCommand extends Command {
 
 			// Only switches the arguments out if the argument is not a variable argument
 			if(!aliasLookup.isEmpty()) {
-				parsedArgs[i] = aliasLookup.get(parsedArgs[i]);
+				String baseArgument = aliasLookup.get(parsedArgs[i]);
+				
+				if(baseArgument == null) {
+					giveInvalidArgumentMessage(channel);
+					return null;
+				}
+				
+				parsedArgs[i] = baseArgument;
 			} else {
 				parsedArgs[i] = "";
 			}
