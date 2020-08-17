@@ -184,7 +184,7 @@ public class Main extends ListenerAdapter {
 				.setDefaultAction(Main::onPronounce)
 				.addFinalArgumentPath("")
 				.addArgument(1, "english", "eng", "en", "inglés")
-				.addArgument(1, "spanish", "sp", "español", "esp", "es")
+				.addArgument(1, "spanish", "sp", "español", "esp")
 				.addFinalArgumentPath("", "english")
 				.addFinalArgumentPath("", "spanish");
 		
