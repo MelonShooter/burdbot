@@ -46,6 +46,11 @@ public class Constant {
 	public static final String LOG_FILE = System.getProperty("user.dir") + File.separator + "log.txt";
 	
 	/**
+	 * The path leading to the folder for forvo recordings
+	 */
+	public static final String FORVO_FOLDER = System.getProperty("user.dir") + File.separator + "forvo";
+	
+	/**
 	 * The message to give users when an internal error occurs
 	 */
 	public static final String ERROR_MESSAGE = "I'm sorry, but something has gone wrong. Please notify <@367538590520967181> of this.";

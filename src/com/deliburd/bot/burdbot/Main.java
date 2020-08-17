@@ -10,6 +10,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 
@@ -18,6 +20,10 @@ import javax.security.auth.login.LoginException;
 import com.deliburd.bot.burdbot.commands.CommandManager;
 import com.deliburd.bot.burdbot.commands.MultiCommand;
 import com.deliburd.bot.burdbot.commands.MultiCommandAction;
+import com.deliburd.bot.burdbot.forvo.EnglishForvoCountries;
+import com.deliburd.bot.burdbot.forvo.IForvoCountry;
+import com.deliburd.bot.burdbot.forvo.PronunciationFetcher;
+import com.deliburd.bot.burdbot.forvo.SpanishForvoCountries;
 import com.deliburd.readingpuller.ReadingManager;
 import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
@@ -29,8 +35,10 @@ import com.deliburd.util.Pair;
 import com.deliburd.recorder.util.audio.AudioCompression;
 import com.deliburd.util.BotUtil;
 import com.deliburd.util.ErrorLogger;
+import com.deliburd.util.FileUtil;
 import com.deliburd.util.MessageResponseQueue;
 import com.deliburd.util.ServerConfig;
+import com.deliburd.util.StringUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import net.dv8tion.jda.api.JDABuilder;
@@ -50,8 +58,12 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 
 public class Main extends ListenerAdapter {
+	private static final EnglishForvoCountries defaultEnglishCountry = EnglishForvoCountries.UNITEDSTATES;
+	private static final SpanishForvoCountries defaultSpanishCountry = SpanishForvoCountries.URUGUAY;
+	
 	public static void main(String[] args) throws LoginException {
         reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
+        FileUtil.deleteFolder(new File(Constant.FORVO_FOLDER));
         
 		ServerConfig.registerTable("templates");
 		JDABuilder burdRecorder = JDABuilder.createDefault(BotConstant.BOT_TOKEN_STRING);
@@ -164,9 +176,136 @@ public class Main extends ListenerAdapter {
 				.setArgumentDescriptions("The message id or link to your audio file that you want deleted. You must be in the "
 						+ "channel the audio file was sent to unless a link to the message was provided instead of an ID.")
 				.finalizeCommand();
+		
+		String findPronunciationCommandDescription = "Finds the pronunciation of a word in English or Spanish and uploads it as an MP3 file.";
+		MultiCommand pronunciationCommand = commandManager.addCommand("pronounce", findPronunciationCommandDescription)
+				.setMinArguments(1)
+				.addArgument(0)
+				.setDefaultAction(Main::onPronounce)
+				.addFinalArgumentPath("")
+				.addArgument(1, "english", "eng", "en", "inglés")
+				.addArgument(1, "spanish", "sp", "español", "esp", "es")
+				.addFinalArgumentPath("", "english")
+				.addFinalArgumentPath("", "spanish");
+		
+		addCountryArguments(SpanishForvoCountries.values(), pronunciationCommand);
+		addCountryArguments(EnglishForvoCountries.values(), pronunciationCommand);
+		
+		pronunciationCommand.setArgumentDescriptions("The word to look for the pronunciation of", "The language of the word. "
+						+ "You can also specify a country instead of a language. If a country is specified, a pronunciation available "
+						+ "that is as similar as possible to the given country's accent(s) will be provided. This argument is optional.")
+				.setCooldown(10)
+				.finalizeCommand();
 
 		burdRecorder.addEventListeners(AudioReceiverHandler.getHandler(), MessageResponseQueue.getQueue()).build();
     }
+	
+	private static void addCountryArguments(IForvoCountry[] countries, MultiCommand command) {
+		for(IForvoCountry country : countries) {
+			String lowercaseCountryName = country.toString().toLowerCase();
+			String properCountryName = country.getPrettyName().replaceAll(" ", "");
+			String countryAbbreviation = country.getCountryAbbreviation();
+			command.addArgument(1, properCountryName, lowercaseCountryName, countryAbbreviation)
+					.addFinalArgumentPath("", lowercaseCountryName);
+		}
+	}
+	
+	private static void onPronounce(String[] args, MessageReceivedEvent event, MultiCommand command) {
+		TextChannel channel = event.getTextChannel();
+		String word = args[0];
+		
+		if(StringUtil.ContainsWhitespace(word)) {
+			command.giveInvalidArgumentMessage(channel, "This word cannot contain whitespace.");
+			return;
+		} else if(!event.getGuild().getSelfMember().hasPermission(channel, Permission.MESSAGE_ATTACH_FILES)) {
+			BotUtil.sendMessage(channel, "I don't have permission to atttach files in this channel.");
+			return;
+		}
+		
+		BiConsumer<File, String> onEnglishSuccess;
+		BiConsumer<File, String> onSpanishSuccess;
+		
+		if(args.length > 1) {
+			EnglishForvoCountries englishCountry = null;
+			SpanishForvoCountries spanishCountry = null;
+			Runnable onFailure = () -> onPronunciationFetcherFailure(channel);
+			String firstArgument = args[1];
+			
+			if(firstArgument.equals("english")) {
+				englishCountry = defaultEnglishCountry;
+			} else if(firstArgument.equals("spanish")) {
+				spanishCountry = defaultSpanishCountry;
+			} else {
+				String uppercaseCountry = firstArgument.toUpperCase();
+				
+				try {
+					spanishCountry = SpanishForvoCountries.valueOf(uppercaseCountry);
+				} catch(IllegalArgumentException e) {}
+				
+				if(spanishCountry == null) {
+					try {
+						englishCountry = EnglishForvoCountries.valueOf(uppercaseCountry);
+					} catch(IllegalArgumentException e) {}
+				}
+			}
+			
+			if(englishCountry != null) {
+				onEnglishSuccess = (file, prettyName) -> uploadFile(file, channel, prettyName, false);
+				PronunciationFetcher.fetchEnglishPronunciation(word, englishCountry, onEnglishSuccess, onFailure);
+			} else if(spanishCountry != null) {
+				onSpanishSuccess = (file, prettyName) -> uploadFile(file, channel, prettyName, true);
+				PronunciationFetcher.fetchSpanishPronunciation(word, spanishCountry, onSpanishSuccess, onFailure);
+			} else {
+				ErrorLogger.LogIssue("Could not resolve any country for the pronunciation command", channel);
+			}
+		} else {
+			AtomicInteger failureCounter = new AtomicInteger();
+			onEnglishSuccess = (file, prettyName) -> uploadFile(file, channel, prettyName, false);
+			onSpanishSuccess = (file, prettyName) -> uploadFile(file, channel, prettyName, true);
+			Runnable onFailure = () -> onPronunciationFetcherFailure(channel, failureCounter);
+			PronunciationFetcher.fetchEnglishPronunciation(word, defaultEnglishCountry, onEnglishSuccess, onFailure);
+			PronunciationFetcher.fetchSpanishPronunciation(word, defaultSpanishCountry, onSpanishSuccess, onFailure);
+		}
+	}
+	
+	private static void uploadFile(File file, TextChannel channel, String countryPrettyName, boolean isSpanish) {
+		try {
+			if(!channel.getGuild().getSelfMember().hasPermission(channel, Permission.MESSAGE_ATTACH_FILES)) {
+				BotUtil.sendMessage(channel, "I don't have permission to atttach files in this channel.");
+				return;
+			}
+			
+			String messageToSend;
+			
+			if(isSpanish) {
+				messageToSend = "Found a recording in Spanish of the word.";
+			} else {
+				messageToSend = "Found a recording in English of the word.";
+			}
+			
+			messageToSend += " Country: " + countryPrettyName;
+			
+			channel.sendMessage(messageToSend)
+					.addFile(file)
+					.queue(null, error -> {
+						BotUtil.sendMessage(channel, "Something went wrong. I'm most likely missing some permissions.");
+					});
+		} finally {
+			file.delete();
+		}
+	}
+	
+	private static void onPronunciationFetcherFailure(MessageChannel channel) {
+		BotUtil.sendMessage(channel, "Could not find any audio file for the given word.");
+	}
+	
+	private static void onPronunciationFetcherFailure(MessageChannel channel, AtomicInteger counter) {
+		int failureCounter = counter.incrementAndGet();
+		
+		if(failureCounter == 2) {
+			BotUtil.sendMessage(channel, "Could not find any audio file for the given word.");
+		}
+	}
     
     /**
      * Reloads texts on startup and daily

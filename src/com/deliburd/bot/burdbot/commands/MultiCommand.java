@@ -243,7 +243,7 @@ public class MultiCommand extends Command {
 	 * @param aliases The aliases for the base argument
 	 * @return The changed MultiCommand
 	 */
-	public MultiCommand addArgument(int argumentPosition, String baseArgument, String[] aliases) {
+	public MultiCommand addArgument(int argumentPosition, String baseArgument, String... aliases) {
 		if(isFinalized) {
 			throw new IllegalStateException("This command has already been finalized.");
 		} else if(baseArgument == null) {
