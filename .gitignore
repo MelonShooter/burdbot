@@ -7,4 +7,6 @@ recorder_data
 config
 src/com/deliburd/bot/burdbot/BotConstant.java
 sesion_bot_data
+forvo
+log.txt
 doc
