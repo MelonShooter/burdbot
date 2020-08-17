@@ -206,7 +206,9 @@ public class Main extends ListenerAdapter {
 			String properCountryName = country.getPrettyName().replaceAll(" ", "");
 			String countryAbbreviation = country.getCountryAbbreviation();
 			command.addArgument(1, properCountryName, lowercaseCountryName, countryAbbreviation)
-					.addFinalArgumentPath("", lowercaseCountryName);
+					.addFinalArgumentPath("", lowercaseCountryName)
+					.addFinalArgumentPath("", properCountryName)
+					.addFinalArgumentPath("", countryAbbreviation);
 		}
 	}
 	
@@ -221,6 +223,8 @@ public class Main extends ListenerAdapter {
 			BotUtil.sendMessage(channel, "I don't have permission to atttach files in this channel.");
 			return;
 		}
+		
+		BotUtil.sendMessage(channel, "Finding pronunciation...");
 		
 		BiConsumer<File, String> onEnglishSuccess;
 		BiConsumer<File, String> onSpanishSuccess;
