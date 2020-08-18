@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
@@ -90,13 +88,22 @@ public class PronunciationFetcher {
 			onFailure.run();
 			return;
 		}
-			
-		long uniqueID = Instant.now().toEpochMilli() + Thread.currentThread().getId();
-		File newMP3File = new File(forvoFolderWithSeparator + word + "-" + uniqueID + ".mp3");
 		
-		newMP3File.getParentFile().mkdirs();
+		File forvoFolder = new File(Constant.FORVO_FOLDER);
+		long uniqueID = Thread.currentThread().getId();
+		String fileName = forvoFolderWithSeparator + word + "-" + uniqueID;
+		File newMP3File = new File(fileName + ".mp3");
+		
+		forvoFolder.mkdirs();
 
 		if (newMP3File.exists()) {
+			int counter = 0;
+			
+			do {
+				counter++;
+				newMP3File = new File(fileName + "-" + counter + ".mp3");
+			} while(newMP3File.exists());
+			
 			onFailure.run();
 			ErrorLogger.LogIssue("The MP3 file already exists. This should never happen.");
 			return;
@@ -133,6 +140,11 @@ public class PronunciationFetcher {
 			}
 			
 			languageContainer = pronunciationPage.selectFirst("div#language-container-" + language.toString());
+			
+			if(languageContainer != null) {
+				languageContainer = languageContainer.selectFirst("article.pronunciations:not([id])");
+			}
+			
 			var languageContainerMap = cacheLanguageContainers(language, pronunciationPage, languageContainer);
 			
 			if(languageContainerMap != null) {
@@ -169,6 +181,10 @@ public class PronunciationFetcher {
 			String strippedUppercaseNationality = getNationality(nationalityElement)
 					.toUpperCase()
 					.replace(" ", "");
+			
+			if(strippedUppercaseNationality.isBlank()) {
+				continue;
+			}
 
 			try {
 				IForvoCountry pronunciationCountry;
@@ -218,6 +234,7 @@ public class PronunciationFetcher {
 				Element cachedLanguageContainer = pronunciationPage.selectFirst("div#language-container-" + languageToCache.toString());
 				
 				if(cachedLanguageContainer != null) {
+					cachedLanguageContainer = cachedLanguageContainer.selectFirst("article.pronunciations:not([id])");
 					pronunciationCacheMap.put(languageToCache, cachedLanguageContainer);
 				}
 			}
@@ -301,7 +318,7 @@ public class PronunciationFetcher {
 			
 			return nationality;
 		} else {
-			ErrorLogger.LogIssue("No nationality match found. This should never happen.");
+			// No nationality was given.
 			return "";
 		}
 	}

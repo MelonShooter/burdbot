@@ -13,7 +13,7 @@ public enum EnglishForvoCountries implements IForvoCountry {
 	CANADA("ca", "Canada", "UnitedStates", "UnitedKingdom"),
 	IRELAND("ie", "Ireland", "UnitedKingdom"),
 	NEWZEALAND("nz", "New Zealand", "Australia", "UnitedKingdom"),
-	UNITEDKINGDOM("gb", "United Kingdom", "Australia", "Ireland", "Canada", "UnitedStates"),
+	UNITEDKINGDOM("uk", "United Kingdom", "Australia", "Ireland", "Canada", "UnitedStates"),
 	UNITEDSTATES("us", "United States", "Canada");
 
 	private static final EnumMap<EnglishForvoCountries, List<EnglishForvoCountries>> countryProximityMap = new EnumMap<>(EnglishForvoCountries.class);
