@@ -224,7 +224,7 @@ public class Main extends ListenerAdapter {
 			return;
 		}
 		
-		BotUtil.sendMessage(channel, "Finding pronunciation...");
+		BotUtil.sendMessage(channel, "Finding pronunciation for ``" + word + "``...");
 		
 		BiConsumer<File, String> onEnglishSuccess;
 		BiConsumer<File, String> onSpanishSuccess;
@@ -254,25 +254,25 @@ public class Main extends ListenerAdapter {
 			}
 			
 			if(englishCountry != null) {
-				onEnglishSuccess = (file, prettyName) -> uploadFile(file, channel, prettyName, false);
+				onEnglishSuccess = (file, prettyName) -> uploadFile(word, file, channel, prettyName, false);
 				PronunciationFetcher.fetchEnglishPronunciation(word, englishCountry, onEnglishSuccess, onFailure);
 			} else if(spanishCountry != null) {
-				onSpanishSuccess = (file, prettyName) -> uploadFile(file, channel, prettyName, true);
+				onSpanishSuccess = (file, prettyName) -> uploadFile(word, file, channel, prettyName, true);
 				PronunciationFetcher.fetchSpanishPronunciation(word, spanishCountry, onSpanishSuccess, onFailure);
 			} else {
 				ErrorLogger.LogIssue("Could not resolve any country for the pronunciation command", channel);
 			}
 		} else {
 			AtomicInteger failureCounter = new AtomicInteger();
-			onEnglishSuccess = (file, prettyName) -> uploadFile(file, channel, prettyName, false);
-			onSpanishSuccess = (file, prettyName) -> uploadFile(file, channel, prettyName, true);
+			onEnglishSuccess = (file, prettyName) -> uploadFile(word, file, channel, prettyName, false);
+			onSpanishSuccess = (file, prettyName) -> uploadFile(word, file, channel, prettyName, true);
 			Runnable onFailure = () -> onPronunciationFetcherFailure(channel, failureCounter);
 			PronunciationFetcher.fetchEnglishPronunciation(word, defaultEnglishCountry, onEnglishSuccess, onFailure);
 			PronunciationFetcher.fetchSpanishPronunciation(word, defaultSpanishCountry, onSpanishSuccess, onFailure);
 		}
 	}
 	
-	private static void uploadFile(File file, TextChannel channel, String countryPrettyName, boolean isSpanish) {
+	private static void uploadFile(String word, File file, TextChannel channel, String countryPrettyName, boolean isSpanish) {
 		try {
 			if(!channel.getGuild().getSelfMember().hasPermission(channel, Permission.MESSAGE_ATTACH_FILES)) {
 				BotUtil.sendMessage(channel, "I don't have permission to atttach files in this channel.");
@@ -282,16 +282,16 @@ public class Main extends ListenerAdapter {
 			String messageToSend;
 			
 			if(isSpanish) {
-				messageToSend = "Found a recording in Spanish of the word.";
+				messageToSend = "Found a recording in Spanish of ``" + word + "``.";
 			} else {
-				messageToSend = "Found a recording in English of the word.";
+				messageToSend = "Found a recording in English of ``" + word + "``.";
 			}
 			
 			messageToSend += " Country: " + countryPrettyName;
 			
 			channel.sendMessage(messageToSend)
 					.addFile(file)
-					.queue(null, error -> {
+					.queue(s -> file.delete(), error -> {
 						BotUtil.sendMessage(channel, "Something went wrong. I'm most likely missing some permissions.");
 					});
 		} finally {
