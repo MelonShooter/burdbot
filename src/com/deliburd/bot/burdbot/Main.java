@@ -38,9 +38,11 @@ import com.deliburd.util.ErrorLogger;
 import com.deliburd.util.FileUtil;
 import com.deliburd.util.MessageResponseQueue;
 import com.deliburd.util.ServerConfig;
+import com.deliburd.util.ActivitySwitcher;
 import com.deliburd.util.StringUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -60,8 +62,9 @@ import net.dv8tion.jda.api.requests.ErrorResponse;
 public class Main extends ListenerAdapter {
 	private static final EnglishForvoCountries defaultEnglishCountry = EnglishForvoCountries.UNITEDSTATES;
 	private static final SpanishForvoCountries defaultSpanishCountry = SpanishForvoCountries.URUGUAY;
+	private static volatile JDA JDAInstance;
 	
-	public static void main(String[] args) throws LoginException {
+	public static void main(String[] args) throws LoginException, InterruptedException {
         reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
         FileUtil.deleteFolder(new File(Constant.FORVO_FOLDER));
         
@@ -196,9 +199,22 @@ public class Main extends ListenerAdapter {
 						+ "that is as similar as possible to the given country's accent(s) will be provided. This argument is optional.")
 				.setCooldown(10)
 				.finalizeCommand();
+		
+		ActivitySwitcher.addState(",help | Making AOTW/VC recordings", 3, TimeUnit.DAYS);
+		ActivitySwitcher.addState(",help | Fetching pronunciations", 1, TimeUnit.DAYS);
 
-		burdRecorder.addEventListeners(AudioReceiverHandler.getHandler(), MessageResponseQueue.getQueue()).build();
+		JDAInstance = burdRecorder.addEventListeners(AudioReceiverHandler.getHandler(), MessageResponseQueue.getQueue())
+				.build().awaitReady();
     }
+	
+	/**
+	 * Returns an instance of JDA
+	 * 
+	 * @return An instance of JDA. Null if the instance isn't ready.
+	 */
+	public static JDA getJDAInstance() {
+		return JDAInstance;
+	}
 	
 	private static void addCountryArguments(IForvoCountry[] countries, MultiCommand command) {
 		for(IForvoCountry country : countries) {
