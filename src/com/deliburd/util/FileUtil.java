@@ -1,6 +1,10 @@
 package com.deliburd.util;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.function.Predicate;
 
 public final class FileUtil {
@@ -21,16 +25,12 @@ public final class FileUtil {
 		if (files == null) {
 			return;
 		}
-		
-		if(files.length == 0) {
-			folder.delete();
-		}
 
-		for(int i = 0; i < files.length; i++) {
-			if(files[i].isDirectory()) {
-				deleteFolder(files[i]);
+		for(var file : files) {
+			if(file.isDirectory()) {
+				deleteFolder(file);
 			} else {
-				files[i].delete();
+				file.delete();
 			}
 		}
 	}
@@ -38,32 +38,22 @@ public final class FileUtil {
 	/**
 	 * Recursively deletes a folder. Does nothing if the folder doesn't exist or isn't a directory
 	 * 
-	 * @param folder The folder to delete
+	 * @param folder The folder to delete. Cannot be null
 	 */
 	public static void deleteFolder(File folder) {
 		if(folder == null) {
 			throw new IllegalArgumentException("Directory is null.");
-		}
-		
-		File[] files = folder.listFiles();
-
-		if (files == null) {
+		} else if(!folder.isDirectory()) {
 			return;
 		}
-		
-		if(files.length == 0) {
-			folder.delete();
-		}
 
-		for(int i = 0; i < files.length; i++) {
-			if(files[i].isDirectory()) {
-				deleteFolder(files[i]);
-			} else {
-				files[i].delete();
-			}
+		try(var folderContentStream = Files.walk(folder.toPath())) {
+			folderContentStream.sorted(Comparator.reverseOrder())
+					.map(Path::toFile)
+					.forEachOrdered(File::delete);
+		} catch (IOException e) {
+			ErrorLogger.LogException(e);
 		}
-		
-		folder.delete();
 	}
 
 	/**
