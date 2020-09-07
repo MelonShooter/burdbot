@@ -33,15 +33,11 @@ public class ArrayUtil {
 		} else if(list1.isEmpty()) {
 			return new ArrayList<String>();
 		}
-		
-		ArrayList<String> mergedList = new ArrayList<String>();
-		var concatenatedValue = new StringBuilder();
+
+		ArrayList<String> mergedList = new ArrayList<String>(list1.size() + 16);
 		
 		for(int i = 0; i < list1.size(); i++) {
-			concatenatedValue.append(list1.get(i))
-					.append(list2.get(i));
-			mergedList.add(concatenatedValue.toString());
-			concatenatedValue.setLength(0);
+			mergedList.add(list1.get(i) + list2.get(i));
 		}
 		
 		return mergedList;
