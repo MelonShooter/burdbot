@@ -232,7 +232,7 @@ public class Main extends ListenerAdapter {
 		TextChannel channel = event.getTextChannel();
 		String word = args[0];
 		
-		if(StringUtil.ContainsWhitespace(word)) {
+		if(StringUtil.containsWhitespace(word)) {
 			command.giveInvalidArgumentMessage(channel, "This word cannot contain whitespace.");
 			return;
 		} else if(!event.getGuild().getSelfMember().hasPermission(channel, Permission.MESSAGE_ATTACH_FILES)) {

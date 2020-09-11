@@ -8,7 +8,7 @@ public class StringUtil {
 	
 	private StringUtil() {}
 	
-	public static boolean ContainsWhitespace(String string) {
+	public static boolean containsWhitespace(String string) {
 		Matcher matcher = pattern.matcher(string);
 		return matcher.find();
 	}
