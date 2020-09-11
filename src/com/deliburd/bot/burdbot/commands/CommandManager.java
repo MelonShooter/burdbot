@@ -1,12 +1,14 @@
 package com.deliburd.bot.burdbot.commands;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-
+import java.util.concurrent.ConcurrentSkipListSet;
 import com.deliburd.bot.burdbot.Constant;
+import com.deliburd.bot.burdbot.commands.argumenttypes.BigIntegerArgument;
 import com.deliburd.util.BotUtil;
 import com.deliburd.util.Cooldown;
 
@@ -30,9 +32,9 @@ public class CommandManager extends ListenerAdapter {
 	private final static ConcurrentHashMap<String, CommandManager> prefixToCommandManagerMap = new ConcurrentHashMap<>();
 	
 	/**
-	 * A list of all of the bot's commands mapped to the command object
+	 * An alphabetical map of modules linked to an list of their commands.
 	 */
-	private final ConcurrentSkipListMap<String, Command> commandNameMap;
+	private final ConcurrentSkipListSet<CommandModule> commandModuleMap;
 	
 	/**
 	 * A set of the registered commands.
@@ -40,13 +42,14 @@ public class CommandManager extends ListenerAdapter {
 	private final Set<Command> commandSet;
 	
 	/**
-	 * Maps all command aliases to the base command
+	 * Maps all command names and aliases to the command
 	 */
-	private final ConcurrentHashMap<String, String> commandAliasLookup;
+	private final ConcurrentHashMap<String, Command> commandNameLookup;
 
 	private final String prefix;
 	private final JDA JDA;
 	private final JDABuilder JDABuilder;
+	private final CommandModule helpModule;
 	private final String helpDescription;
 	private volatile boolean isInitialized;
 	
@@ -55,16 +58,18 @@ public class CommandManager extends ListenerAdapter {
 	 * 
 	 * @param prefix The command manager's prefix to use for all commands registered in it
 	 * @param helpDescription The description of the help command for this command manager
+	 * @param helpModule The module to put the help command into.
 	 * @param builder The JDABuilder to register the commands for when the first command is added.
 	 */
-	public CommandManager(String prefix, String helpDescription, JDABuilder builder) {
+	public CommandManager(String prefix, String helpDescription, CommandModule helpModule, JDABuilder builder) {
 		this.prefix = Objects.requireNonNull(prefix, "The prefix cannot be null");
 		this.helpDescription = Objects.requireNonNull(helpDescription, "The help description cannot be null");
 		this.JDA = null;
 		this.JDABuilder = Objects.requireNonNull(builder, "The JDA builder cannot be null");
-		commandNameMap = new ConcurrentSkipListMap<String, Command>();
+		this.helpModule = helpModule; 
+		commandModuleMap = new ConcurrentSkipListSet<>();
 		commandSet = ConcurrentHashMap.newKeySet();
-		commandAliasLookup = new ConcurrentHashMap<String, String>();
+		commandNameLookup = new ConcurrentHashMap<>();
 	}
 	
 	/**
@@ -72,16 +77,33 @@ public class CommandManager extends ListenerAdapter {
 	 * 
 	 * @param prefix The command manager's prefix to use for all commands registered in it
 	 * @param helpDescription The description of the help command for this command manager
+	 * @param helpModule The module to put the help command into.
 	 * @param JDA The JDA instance to register the commands for when the first command is added.
 	 */
-	public CommandManager(String prefix, String helpDescription, JDA JDA) {
+	public CommandManager(String prefix, String helpDescription, CommandModule helpModule, JDA JDA) {
 		this.prefix = Objects.requireNonNull(prefix, "The prefix cannot be null");
 		this.helpDescription = Objects.requireNonNull(helpDescription, "The help description cannot be null");
 		this.JDA = Objects.requireNonNull(JDA, "The JDA instance cannot be null");
 		this.JDABuilder = null;
-		commandNameMap = new ConcurrentSkipListMap<String, Command>();
+		this.helpModule = helpModule;
+		commandModuleMap = new ConcurrentSkipListSet<>();
 		commandSet = ConcurrentHashMap.newKeySet();
-		commandAliasLookup = new ConcurrentHashMap<String, String>();
+		commandNameLookup = new ConcurrentHashMap<>();
+	}
+
+	public void addModules(CommandModule... modules) {
+		for(CommandModule module : modules) {
+			
+		}
+	}
+	
+	/**
+	 * Gets an umodifiable NavigableSet of the command modules for this manager
+	 * 
+	 * @return An unmodifiable NavigableSet of the command modules for this manager
+	 */
+	public NavigableSet<CommandModule> getCommandModules() {
+		return Collections.unmodifiableNavigableSet(commandModuleMap);
 	}
 	
 	/**
@@ -110,18 +132,19 @@ public class CommandManager extends ListenerAdapter {
 	 * If a command with this command name already exists,
 	 * the command returned won't have any effect even when finalized.
 	 * 
+	 * @param module The module to put the command in.
 	 * @param command The command's name
 	 * @param description The description of the command for the help.
 	 * @param action The action to run when the command is typed.
 	 * @return The new FinalCommand
 	 */
-	public FinalCommand addCommand(String command, String description, FinalCommandAction action) {
+	private FinalCommand addCommand(CommandModule module, String command, String description, FinalCommandAction action) {
 		if(!isInitialized) {
 			initializeManager();
 		}
 		
 		FinalCommand newCommand = new FinalCommand(prefix, command, description, action);
-		registerCommand(command, newCommand);
+		registerCommand(module, command, newCommand);
 		
 		return newCommand;
 	}
@@ -129,17 +152,18 @@ public class CommandManager extends ListenerAdapter {
 	/**
 	 * Creates a command that can have arguments added to it
 	 * 
+	 * @param module The module to put the command in.
 	 * @param command The command's name
 	 * @param description The description of the command for the help.
 	 * @return The new MultiCommand
 	 */
-	public MultiCommand addCommand(String command, String description) {
+	private MultiCommand addCommand(CommandModule module, String command, String description) {
 		if(!isInitialized) {
 			initializeManager();
 		}
 		
 		MultiCommand newCommand = new MultiCommand(prefix, command, description);
-		registerCommand(command, newCommand);
+		registerCommand(module, command, newCommand);
 		
 		return newCommand;
 	}
@@ -151,7 +175,7 @@ public class CommandManager extends ListenerAdapter {
 	 * @return Whether the command exists in this command manager
 	 */
 	public boolean hasCommand(String commandName) {
-		return commandAliasLookup.containsKey(commandName);
+		return commandNameLookup.containsKey(commandName);
 	}
 	
 	/**
@@ -174,13 +198,7 @@ public class CommandManager extends ListenerAdapter {
 
 			String[] messageArgs = message.split(" +");
 			String baseCommand = messageArgs[0].substring(prefix.length());
-			String parsedBaseCommand = commandAliasLookup.get(baseCommand);
-
-			if (parsedBaseCommand == null) {
-				return;
-			}
-
-			Command command = commandNameMap.get(parsedBaseCommand);
+			Command command = commandNameLookup.get(baseCommand);
 
 			if (command == null) {
 				return;
@@ -206,6 +224,7 @@ public class CommandManager extends ListenerAdapter {
 	private boolean hasPermission(Command command, MessageReceivedEvent event) {
 		Permission[] restrictions = command.getPermissionRestrictions();
 		boolean isDELIBURD = event.getAuthor().getIdLong() == Constant.DELIBURD_ID;
+		
 		if(restrictions == null || event.getMember().hasPermission(restrictions) || isDELIBURD) {
 			return true;
 		}
@@ -224,11 +243,11 @@ public class CommandManager extends ListenerAdapter {
 			throw new RuntimeException("Command does not exist.");
 		} else if(command.isFinalized()) {
 			throw new RuntimeException("Command has already been finalized.");
-		} else if(commandNameMap.containsKey(alias)) {
+		} else if(hasCommand(alias)) {
 			throw new RuntimeException("This alias is already a registered command name/alias.");
 		}
 		
-		commandAliasLookup.put(alias, command.getCommandName());
+		commandNameLookup.put(alias, command);
 	}
 	
 	/**
@@ -237,7 +256,7 @@ public class CommandManager extends ListenerAdapter {
 	private void initializeManager() {
 		isInitialized = true;
 		
-		addCommand(Constant.HELP_COMMAND, helpDescription)
+		addCommand(helpModule, Constant.HELP_COMMAND, helpDescription)
 				.setArgumentDescriptions("A command.")
 				.addArgument(0)
 				.addFinalArgumentPath(this::helpWithCommandArgument, "")
@@ -263,22 +282,27 @@ public class CommandManager extends ListenerAdapter {
 	 */
 	private void sendHelp(String[] args, MessageReceivedEvent event, MultiCommand selfCommand) {
 		StringBuilder commandHelpString = new StringBuilder(Constant.BOT_NAME + "'s Commands:\n");
-		var commandEntrySet = commandNameMap.entrySet();
 
-		for (var commandEntry : commandEntrySet) {
-			Command command = commandEntry.getValue();
+		for (var commandModule : commandModuleMap) {
+			commandHelpString.append(commandModule.getModuleName())
+					.append(" - ")
+					.append(commandModule.getModuleDescription())
+					.append("\n");
+
+			var commandSet = commandModule.getCommands();
 			
-			if(hasPermission(command, event)) {
-				String commandName = commandEntry.getKey();
-				
-				commandHelpString
-						.append("```")
-						.append(Constant.COMMAND_PREFIX)
-						.append(commandName)
-						.append(" - ")
-						.append(commandNameMap.get(commandName).getShortCommandDescription())
-						.append("```");
+			for(Command command : commandSet) {
+				if(hasPermission(command, event)) {
+					commandHelpString.append("```")
+							.append(Constant.COMMAND_PREFIX)
+							.append(command.getCommandName())
+							.append(" - ")
+							.append(command.getShortCommandDescription())
+							.append("```");
+				}
 			}
+			
+			commandHelpString.append("\n");
 		}
 
 		String fullHelpCommand = Constant.COMMAND_PREFIX + Constant.HELP_COMMAND;
@@ -303,18 +327,20 @@ public class CommandManager extends ListenerAdapter {
 	}
 	
 	/**
-	 * Registers a command with the CommandManager
+	 * Registers a command with the CommandManager. Throws an exception if a command with the same
+	 * name has already been registered.
 	 * 
+	 * @param module The module to put the command into
 	 * @param name The command's name
 	 * @param command The command
 	 */
-	private void registerCommand(String name, Command command) {
-		if(hasCommand(name)) {
+	private void registerCommand(CommandModule module, String name, Command command) {
+		if(commandNameLookup.putIfAbsent(name, command) != null) {
 			return;
 		}
-
-		commandAliasLookup.putIfAbsent(name, name);
-		commandNameMap.putIfAbsent(name, command);
+		
+		module.addCommand(command);
+		commandModuleMap.add(module);
 		commandSet.add(command);
 	}
 	
@@ -327,18 +353,14 @@ public class CommandManager extends ListenerAdapter {
 	 */
 	private void helpWithCommandArgument(String[] args, MessageReceivedEvent event, MultiCommand helpCommand) {
 		MessageChannel channel = event.getChannel();
-		String baseCommand = commandAliasLookup.get(args[0]);
+		Command command = commandNameLookup.get(args[0]);
 		
-		if(baseCommand == null) {
+		if(command == null) {
 			helpCommand.giveInvalidArgumentMessage(channel);
 			return;
 		}
 		
-		Command command = commandNameMap.get(baseCommand);
-
-		if (command == null) {
-			helpCommand.giveInvalidArgumentMessage(channel);
-		} else if (!hasPermission(command, event)) {
+		if (!hasPermission(command, event)) {
 			BotUtil.sendMessage(channel, "You don't have access to this command.");
 		} else {
 			BotUtil.sendMessage(channel, command.getCommandDescription());
