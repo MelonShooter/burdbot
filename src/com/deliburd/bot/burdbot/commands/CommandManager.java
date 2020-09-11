@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import com.deliburd.bot.burdbot.Constant;
-import com.deliburd.bot.burdbot.commands.argumenttypes.BigIntegerArgument;
 import com.deliburd.util.BotUtil;
 import com.deliburd.util.Cooldown;
 
@@ -21,10 +20,6 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-/**
- * @author MelonShooter
- *
- */
 public class CommandManager extends ListenerAdapter {	
 	/**
 	 * Links each command manager's prefix to the manager itself.
