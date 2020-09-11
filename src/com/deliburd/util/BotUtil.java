@@ -306,7 +306,19 @@ public class BotUtil {
 	 * @param JDA The JDA instance
 	 * @param userFunction The Consumer to run when the user is found.
 	 */
-	public static void getUser(long userID, JDA JDA, Consumer<User> userFunction) {
+	public static void getUser(long userID, JDA JDA, Consumer<? super User> userFunction) {
+		getUser(userID, JDA, userFunction, error -> {});
+	}
+	
+	/**
+	 * Gets a user by their ID and runs the Consumer provided.
+	 * 
+	 * @param userID The user's ID
+	 * @param JDA The JDA instance
+	 * @param userFunction The Consumer to run when the user is found.
+	 * @param onFailure The Consumer to run on failure.
+	 */
+	public static void getUser(long userID, JDA JDA, Consumer<? super User> userFunction, Consumer<? super Throwable> onFailure) {
 		if(JDA == null) {
 			return;
 		}
@@ -314,7 +326,7 @@ public class BotUtil {
 		User user = JDA.getUserById(userID);
 
 		if(user == null) {
-			JDA.retrieveUserById(userID, false).queue(userFunction, (error) -> {});
+			JDA.retrieveUserById(userID, false).queue(userFunction, onFailure);
 		} else {
 			userFunction.accept(user);
 		}
