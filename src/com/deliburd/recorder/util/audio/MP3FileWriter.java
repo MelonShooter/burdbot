@@ -42,23 +42,21 @@ public class MP3FileWriter implements IAudioFileWriter {
 	private int reservoirFrameCount;
 	
 	static {
-		@SuppressWarnings("serial")
-		var bitrateHashMap = new HashMap<Integer, Integer>() {{;
-			put(1, 32);
-			put(2, 40);
-			put(3, 48);
-			put(4, 56);
-			put(5, 64);
-			put(6, 80);
-			put(7, 96);
-			put(8, 112);
-			put(9, 128);
-			put(10, 160);
-			put(11, 192);
-			put(12, 224);
-			put(13, 256);
-			put(14, 320);
-		}};
+		var bitrateHashMap = new HashMap<Integer, Integer>();
+	      bitrateHashMap.put(1, 32);
+	      bitrateHashMap.put(2, 40);
+	      bitrateHashMap.put(3, 48);
+	      bitrateHashMap.put(4, 56);
+	      bitrateHashMap.put(5, 64);
+	      bitrateHashMap.put(6, 80);
+	      bitrateHashMap.put(7, 96);
+	      bitrateHashMap.put(8, 112);
+	      bitrateHashMap.put(9, 128);
+	      bitrateHashMap.put(10, 160);
+	      bitrateHashMap.put(11, 192);
+	      bitrateHashMap.put(12, 224);
+	      bitrateHashMap.put(13, 256);
+	      bitrateHashMap.put(14, 320);
 		
 		bitrateMap = Collections.unmodifiableMap(bitrateHashMap);
 	}
