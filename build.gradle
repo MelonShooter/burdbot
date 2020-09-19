@@ -31,6 +31,7 @@ repositories {
 }
 
 dependencies {
+  annotationProcessor files("$projectDir/dependencies/annotation_processors/BurdBotAnnotationProcessors.jar")
   implementation 'net.dv8tion:JDA:4.2.0_180'
   implementation 'org.jsoup:jsoup:1.13.1'
   implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.1'
