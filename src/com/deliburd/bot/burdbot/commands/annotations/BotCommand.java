@@ -16,7 +16,11 @@ import com.deliburd.bot.burdbot.commands.annotations.internal.WarnDuplicateEleme
 import net.dv8tion.jda.api.Permission;
 
 /**
- * An annotation to use to create bot commands.
+ * An annotation to use to create bot commands. This should be put on a method that returns void, isn't generic, 
+ * and is in a class that directly extends CommandModule. The parameters of the method must be a CommandCall followed
+ * by any arguments for the command. The number of strings in the argumentDescription annotation parameter must match
+ * the number of arguments. The default name for a command will be the method name lowercased but can be changed through
+ * the commandName annotation parameter.
  * 
  * @author DELIBURD
  */
@@ -47,10 +51,11 @@ public @interface BotCommand {
 	
 	/**
 	 * The command's argument description. This cannot contain any empty descriptions or descriptions that contain purely whitespace.
+	 * The number of descriptions in this parameter must match the amount of argument parameters in the command method.
 	 */
 	@NoEmptyAnnotationParameter
 	@NoPureWhitespaceAnnotationParameter
-	public String[] argumentDescriptions();
+	public String[] argumentDescriptions() default {};
 	
 	/**
 	 * The required permissions to execute this command.
