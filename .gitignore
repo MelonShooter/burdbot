@@ -2,11 +2,19 @@
 .gradle
 
 # Ignore Gradle build output directory
-build
-recorder_data
-config
+/build/
+/recorder_data/
+/config/
 src/com/deliburd/bot/burdbot/BotConstant.java
-sesion_bot_data
-forvo
+/sesion_bot_data/
+/forvo/
 log.txt
-doc
+/doc/
+
+/.apt_generated/
+/.idea/
+/.settings/
+.project
+.classpath
+.factorypath
+BurdBot.iml
