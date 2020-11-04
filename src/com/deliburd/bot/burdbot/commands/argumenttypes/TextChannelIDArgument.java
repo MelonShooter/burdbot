@@ -1,13 +1,18 @@
 package com.deliburd.bot.burdbot.commands.argumenttypes;
 
-import com.deliburd.bot.burdbot.Main;
+import java.util.Optional;
 
+import com.deliburd.bot.burdbot.commands.CommandCall;
+import com.deliburd.bot.burdbot.commands.annotations.ArgumentType;
+
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.TextChannel;
 
-public class TextChannelIDArgument extends ChannelIDArgument {
-	TextChannelIDArgument(int argumentIndex, long channelID) {
-		super(argumentIndex, CommandArgumentType.TEXTCHANNELID, channelID);
+@ArgumentType(argumentTypeName = "Text Channel ID")
+public class TextChannelIDArgument extends GuildChannelIDArgument {
+	public TextChannelIDArgument(CommandCall commandCall, int argumentIndex, String channelIDString) {
+		super(commandCall, argumentIndex, channelIDString);
 	}
 	
 	@Override
@@ -15,8 +20,16 @@ public class TextChannelIDArgument extends ChannelIDArgument {
 		return ChannelType.TEXT;
 	}
 	
+	/**
+	 * Gets a TextChannel from the channel ID. This will return an empty optional if the channel doesn't or no longer exists.
+	 *
+	 * @return The optional TextChannel from the channel ID.
+	 * @see TextChannel
+	 */
 	@Override
-	public TextChannel getChannel() {
-		return Main.getJDAInstance().getTextChannelById(getChannelID());
+	public Optional<? extends TextChannel> getObjectFromID() {
+		JDA JDA = getCommandCall().getCommandEvent().getJDA();
+		
+		return Optional.ofNullable(JDA.getTextChannelById(getValue()));
 	}
 }

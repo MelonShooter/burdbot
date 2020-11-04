@@ -16,7 +16,7 @@ public class UserIDArgument extends LongArgument {
 	private User cachedUser;
 	
 	UserIDArgument(int argumentIndex, long userID) {
-		super(argumentIndex, CommandArgumentType.USERID, userID);
+		super(argumentIndex, userID);
 	}
 	
 	public long getUserID() {

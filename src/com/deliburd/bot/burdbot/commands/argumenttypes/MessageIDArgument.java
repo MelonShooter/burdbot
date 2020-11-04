@@ -16,7 +16,7 @@ public class MessageIDArgument extends LongArgument {
 	private Throwable messageError;
 	
 	public MessageIDArgument(int argumentIndex, long messageID) {
-		super(argumentIndex, CommandArgumentType.MESSAGEID, messageID);
+		super(argumentIndex, messageID);
 	}
 
 	public long getMessageID() {

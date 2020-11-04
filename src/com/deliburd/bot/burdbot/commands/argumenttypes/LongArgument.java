@@ -3,34 +3,46 @@ package com.deliburd.bot.burdbot.commands.argumenttypes;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-public class LongArgument extends CommandArgument {
-	private final long longValue;
+import com.deliburd.bot.burdbot.commands.CommandCall;
+import com.deliburd.bot.burdbot.commands.annotations.ArgumentType;
+
+@ArgumentType(argumentTypeName = "Integer")
+public class LongArgument extends CommandArgument<Long> {
+	private final Long longValue;
 	
-	public LongArgument(int argumentIndex, long longValue) {
-		super(argumentIndex, CommandArgumentType.LONG);
+	public LongArgument(CommandCall commandCall, int argumentIndex, String longString) {
+		super(commandCall, argumentIndex);
 		
-		this.longValue = longValue;
-	}
-	
-	LongArgument(int argumentIndex, CommandArgumentType argumentType, long longValue) {
-		super(argumentIndex, argumentType);
+		Long longValue;
+		
+		try {
+			longValue = Long.valueOf(longString);
+		} catch(NumberFormatException e) {
+			longValue = null;
+		}
 		
 		this.longValue = longValue;
 	}
 	
 	public DoubleArgument toDoubleArgument() {
-		return new DoubleArgument(getArgumentIndex(), longValue);
+		return new DoubleArgument(getCommandCall(), getArgumentIndex(), longValue);
 	}
 	
 	public BigIntegerArgument toBigIntegerArgument() {
-		return new BigIntegerArgument(getArgumentIndex(), BigInteger.valueOf(longValue));
+		return new BigIntegerArgument(getCommandCall(), getArgumentIndex(), BigInteger.valueOf(longValue));
 	}
 	
 	public BigDecimalArgument toBigDecimalArgument() {
-		return new BigDecimalArgument(getArgumentIndex(), BigDecimal.valueOf(longValue));
+		return new BigDecimalArgument(getCommandCall(), getArgumentIndex(), BigDecimal.valueOf(longValue));
 	}
 
-	public long getLong() {
+	@Override
+	public boolean isPossiblyValid() {
+		return longValue != null;
+	}
+
+	@Override
+	public Long getValue() {
 		return longValue;
 	}
 }

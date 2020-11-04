@@ -2,20 +2,45 @@ package com.deliburd.bot.burdbot.commands.argumenttypes;
 
 import java.math.BigDecimal;
 
-public class DoubleArgument extends CommandArgument {
-	private final double doubleValue;
+import com.deliburd.bot.burdbot.commands.CommandCall;
+import com.deliburd.bot.burdbot.commands.annotations.ArgumentType;
+
+@ArgumentType(argumentTypeName = "Decimal")
+public class DoubleArgument extends CommandArgument<Double> {
+	private final Double doubleValue;
 	
-	public DoubleArgument(int argumentIndex, double doubleValue) {
-		super(argumentIndex, CommandArgumentType.DOUBLE);
+	public DoubleArgument(CommandCall commandCall, int argumentIndex, String doubleString) {
+		super(commandCall, argumentIndex);
+		
+		Double doubleValue;
+	
+		try {
+			doubleValue = Double.valueOf(doubleString);
+		}
+		catch(NumberFormatException e) {
+			doubleValue = null;
+		}
+		
+		this.doubleValue = doubleValue;
+	}
+	
+	protected DoubleArgument(CommandCall commandCall, int argumentIndex, double doubleValue) {
+		super(commandCall, argumentIndex);
 
 		this.doubleValue = doubleValue;
 	}
-
-	public double getDouble() {
-		return doubleValue;
-	}
 	
 	public BigDecimalArgument toBigDecimalArgument() {
-		return new BigDecimalArgument(getArgumentIndex(), BigDecimal.valueOf(doubleValue));
+		return new BigDecimalArgument(getCommandCall(), getArgumentIndex(), BigDecimal.valueOf(doubleValue));
+	}
+
+	@Override
+	public boolean isPossiblyValid() {
+		return doubleValue != null;
+	}
+
+	@Override
+	public Double getValue() {
+		return doubleValue;
 	}
 }

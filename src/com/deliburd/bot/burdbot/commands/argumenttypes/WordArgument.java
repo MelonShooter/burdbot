@@ -4,13 +4,7 @@ import com.deliburd.util.StringUtil;
 
 public class WordArgument extends TextArgument {
 	public WordArgument(int argumentIndex, String baseArgument) {
-		super(argumentIndex, CommandArgumentType.WORD, baseArgument);
-		
-		checkBaseArgumentWhitespace(baseArgument);
-	}
-	
-	WordArgument(int argumentIndex, CommandArgumentType argumentType, String baseArgument) {
-		super(argumentIndex, argumentType, baseArgument);
+		super(argumentIndex, baseArgument);
 		
 		checkBaseArgumentWhitespace(baseArgument);
 	}
