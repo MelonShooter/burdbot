@@ -48,7 +48,9 @@ jobs:
           METHOD: sftp
       - name: Restart BurdBot
         env:
+          HOST: ${{ secrets.SFTP_HOST }}
+          PORT: ${{ secrets.PORT }}
           ID: ${{ secrets.SERVER_ID }}
           API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
         run: |
-          curl "https://gamepanel.eggzr.com/api/client/servers/$ID/power" -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" -H "Accept: Application/vnd.pterodactyl.v1+json" -X POST -d '{ "signal": "restart" }'
+          curl "http://$HOST:$PORT/api/client/servers/$ID/power" -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" -H "Accept: Application/vnd.pterodactyl.v1+json" -X POST -d "{ \"signal\": \"restart\" }" -v -L
