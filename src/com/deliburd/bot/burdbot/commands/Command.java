@@ -16,6 +16,7 @@ public abstract class Command {
 	protected Cooldown commandCooldown;
 	protected String commandDescription;
 	protected boolean isFinalized = false;
+	private final CommandModule commandModule;
 	private final String commandName;
 	private final String shortCommandDescription;
 	private final String commandPrefix;
@@ -24,11 +25,13 @@ public abstract class Command {
 	/**
 	 * A bot command
 	 * 
-	 * @prefix The command's prefix
+	 * @param module The command's module
+	 * @param prefix The command's prefix
 	 * @param command The command's name
 	 * @param description The description of the command for the help.
 	 */
-	Command(String prefix, String command, String description) {
+	Command(CommandModule module, String prefix, String command, String description) {
+		commandModule = module;
 		commandName = command;
 		commandPrefix = prefix;
 		commandAliases = new ArrayList<String>();
@@ -191,6 +194,7 @@ public abstract class Command {
 	}
 
 	private void registerAlias(String alias) {
+		alias = alias.toLowerCase();
 		commandAliases.add(alias);
 		CommandManager.getManager(commandPrefix).createAlias(this, alias);
 	}
@@ -220,6 +224,10 @@ public abstract class Command {
 	 */
 	public String getCommandName() {
 		return commandAliases.get(0);
+	}
+	
+	public CommandModule getCommandModule() {
+		return commandModule;
 	}
 	
 	/**

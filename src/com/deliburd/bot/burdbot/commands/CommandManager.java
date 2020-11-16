@@ -1,15 +1,26 @@
 package com.deliburd.bot.burdbot.commands;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+
 import com.deliburd.bot.burdbot.Constant;
+import com.deliburd.bot.burdbot.commands.annotations.BotCommand;
+import com.deliburd.bot.burdbot.commands.annotations.CheckPermission;
 import com.deliburd.util.BotUtil;
 import com.deliburd.util.Cooldown;
+import com.deliburd.util.ErrorLogger;
+import com.deliburd.util.Pair;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -20,16 +31,18 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class CommandManager extends ListenerAdapter {	
+public class CommandManager extends ListenerAdapter {
+	public static final String NO_DESCRIPTION_TEXT = "No description provided.";
+	
 	/**
 	 * Links each command manager's prefix to the manager itself.
 	 */
-	private final static ConcurrentHashMap<String, CommandManager> prefixToCommandManagerMap = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<String, CommandManager> prefixToCommandManagerMap = new ConcurrentHashMap<>();
 	
 	/**
 	 * An alphabetical map of modules linked to an list of their commands.
 	 */
-	private final ConcurrentSkipListSet<CommandModule> commandModuleMap;
+	private final NavigableSet<CommandModule> commandModuleSet;
 	
 	/**
 	 * A set of the registered commands.
@@ -62,7 +75,7 @@ public class CommandManager extends ListenerAdapter {
 		this.JDA = null;
 		this.JDABuilder = Objects.requireNonNull(builder, "The JDA builder cannot be null");
 		this.helpModule = helpModule; 
-		commandModuleMap = new ConcurrentSkipListSet<>();
+		commandModuleSet = Collections.synchronizedNavigableSet(new TreeSet<>());
 		commandSet = ConcurrentHashMap.newKeySet();
 		commandNameLookup = new ConcurrentHashMap<>();
 	}
@@ -81,24 +94,65 @@ public class CommandManager extends ListenerAdapter {
 		this.JDA = Objects.requireNonNull(JDA, "The JDA instance cannot be null");
 		this.JDABuilder = null;
 		this.helpModule = helpModule;
-		commandModuleMap = new ConcurrentSkipListSet<>();
+		commandModuleSet = new ConcurrentSkipListSet<>();
 		commandSet = ConcurrentHashMap.newKeySet();
 		commandNameLookup = new ConcurrentHashMap<>();
 	}
-
+	
+	/**
+	 * Adds the provided modules to the CommandManager. Does nothing if a CommandModule with the same name was already added.
+	 * 
+	 * @param modules The modules to add.
+	 */
 	public void addModules(CommandModule... modules) {
 		for(CommandModule module : modules) {
+			addModule(module);
+		}
+	}
+
+	private void addModule(CommandModule module) {
+		if(!commandModuleSet.add(module)) {
+			return;
+		}
+		
+		Method[] moduleMethods = module.getClass().getDeclaredMethods();
+		var permissionMethodMap = new HashMap<String, Pair<Method, Boolean>>();
+		
+		for(Method permissionMethod : moduleMethods) {
+			CheckPermission permissionAnnotation = permissionMethod.getAnnotation(CheckPermission.class);
 			
+			if(permissionAnnotation != null) {
+				boolean overrideModulePermissionCheck = permissionAnnotation.overrideModulePermissionCheck();
+				permissionMethodMap.put(permissionMethod.getName().toLowerCase(), new Pair<>(permissionMethod, overrideModulePermissionCheck));
+			}
+		}
+		
+		for(Method botCommand : moduleMethods) {
+			BotCommand commandAnnotation = botCommand.getAnnotation(BotCommand.class);
+			
+			if(commandAnnotation != null) {	
+				Command newCommand = addCommand(module, commandAnnotation, botCommand, permissionMethodMap);
+				
+				newCommand.setPermissionRestrictions(commandAnnotation.requiredPermissions())
+						.addCommandNames(commandAnnotation.commandAliases())
+						.setCooldown(commandAnnotation.cooldown())
+						.finalizeCommand();
+			}
 		}
 	}
 	
+	/*
+	 * Aliases will be dealt with via enums. Checking arguments will be dealt with through the ArgumentChecker.
+	 */
+	
+
 	/**
 	 * Gets an umodifiable NavigableSet of the command modules for this manager
 	 * 
 	 * @return An unmodifiable NavigableSet of the command modules for this manager
 	 */
 	public NavigableSet<CommandModule> getCommandModules() {
-		return Collections.unmodifiableNavigableSet(commandModuleMap);
+		return Collections.unmodifiableNavigableSet(commandModuleSet);
 	}
 	
 	/**
@@ -128,36 +182,157 @@ public class CommandManager extends ListenerAdapter {
 	 * the command returned won't have any effect even when finalized.
 	 * 
 	 * @param module The module to put the command in.
-	 * @param command The command's name
-	 * @param description The description of the command for the help.
+	 * @param commandInfo The command's info.
 	 * @param action The action to run when the command is typed.
+	 * @param permissionCheck The check to run for permissions
+	 * @param ignoreModulePermissionCheck Whether to ignore the module's permission check
 	 * @return The new FinalCommand
 	 */
-	private FinalCommand addCommand(CommandModule module, String command, String description, FinalCommandAction action) {
+	private Command addCommand(CommandModule module, BotCommand commandInfo, Method action, Map<String, Pair<Method, Boolean>> permissionMap) {
 		if(!isInitialized) {
 			initializeManager();
 		}
 		
-		FinalCommand newCommand = new FinalCommand(prefix, command, description, action);
-		registerCommand(module, command, newCommand);
+		var permissionInfo = permissionMap.get(action.getName());
+		
+		if(!action.trySetAccessible()) {
+			ErrorLogger.LogIssue("Couldn't set the command method to be accessible.");
+			return null;
+		} else if(permissionInfo != null && !permissionInfo.getKey().trySetAccessible()) {
+			ErrorLogger.LogIssue("Couldn't set the permission check method to be accessible.");
+			return null;
+		}
+		
+		String commandName = getCommandName(commandInfo, action);					
+		String commandDescription = commandInfo.commandDescription();
+		int argumentCount = action.getParameterCount() - 1;
+		Command newCommand;
+		
+		if(argumentCount == 0) {
+			newCommand = addNewFinalCommand(module, action, permissionInfo, commandName, commandDescription);
+		} else {
+			String[] argumentDescriptions = commandInfo.argumentDescriptions();
+			
+			if(argumentDescriptions.length < argumentCount) {
+				String[] fullArgumentDescriptions = Arrays.copyOf(argumentDescriptions, argumentCount);
+				Arrays.fill(fullArgumentDescriptions, argumentDescriptions.length, fullArgumentDescriptions.length, NO_DESCRIPTION_TEXT);
+				argumentDescriptions = fullArgumentDescriptions;
+			}
+			
+			newCommand = addNewMultiCommand(module, action, permissionInfo, commandName, commandDescription)
+					.setArgumentDescriptions(argumentDescriptions);
+		}
+
+		registerCommand(module, commandName, newCommand);
 		
 		return newCommand;
 	}
 	
+	private MultiCommand addNewMultiCommand(CommandModule module, Method action, Pair<Method, Boolean> permissionInfo, String commandName, String commandDescription) {
+		MultiCommandAction defaultAction = (args, event, command) -> {
+			CommandCall commandCall = new CommandCall(event, command);
+
+			if(permissionInfo != null) {
+				runMultiCommand(args, commandCall, action, permissionInfo.getKey(), permissionInfo.getValue());
+			} else {
+				runMultiCommand(args, commandCall, action, null, null);
+			}
+		};
+		
+		MultiCommand command = new MultiCommand(module, prefix, commandName, commandDescription)
+				.setDefaultAction(defaultAction);
+		
+		return command;
+				
+	}
+
+	private void runMultiCommand(String[] args, CommandCall commandCall, Method action, Method permissionCheck, Boolean ignoreModulePermissionCheck) {
+		if(!checkPermission(commandCall, permissionCheck, ignoreModulePermissionCheck)) {
+			return;
+		}
+		//MethodHandle
+
+		
+		try {
+			action.invoke(commandCall);
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			ErrorLogger.LogException(e, commandCall.getCommandEvent().getChannel());
+		}
+	}
+
+	private FinalCommand addNewFinalCommand(CommandModule module, Method action, Pair<Method, Boolean> permissionInfo, String commandName, String commandDescription) {
+		return new FinalCommand(module, prefix, commandName, commandDescription, event -> {
+			CommandCall commandCall = new CommandCall(event, (FinalCommand) commandNameLookup.get(commandName));
+			
+			if(permissionInfo != null) {
+				runFinalCommand(commandCall, action, permissionInfo.getKey(), permissionInfo.getValue());
+			} else {
+				runFinalCommand(commandCall, action, null, null);
+			}
+		});
+	}
+	
+	private String getCommandName(BotCommand commandAnnotation, Method botCommand) {
+		String commandName = commandAnnotation.commandName();
+		
+		if(commandName.isEmpty()) {
+			commandName = botCommand.getName().toLowerCase();
+		}
+		
+		return commandName;
+	}
+	
+	private void runFinalCommand(CommandCall commandCall, Method action, Method permissionCheck, Boolean ignoreModulePermissionCheck) {
+		if(!checkPermission(commandCall, permissionCheck, ignoreModulePermissionCheck)) {
+			return;
+		}
+		
+		try {
+			action.invoke(commandCall);
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			ErrorLogger.LogException(e, commandCall.getCommandEvent().getChannel());
+		}
+	}
+	
+	private boolean checkPermission(CommandCall commandCall, Method permissionCheck, Boolean ignoreModulePermissionCheck) {
+		MessageReceivedEvent event = commandCall.getCommandEvent();
+		Command command = commandCall.getCommand();
+		boolean isDELIBURD = event.getAuthor().getIdLong() == Constant.DELIBURD_ID;
+		MessageChannel channel = event.getChannel();
+
+		if(isDELIBURD) {
+			return true;
+		}
+		
+		boolean hasNoModulePermission = (ignoreModulePermissionCheck == null || !ignoreModulePermissionCheck) && !command.getCommandModule().hasPermission(commandCall);
+		
+		try {
+			if(hasNoModulePermission || permissionCheck != null && !(boolean) permissionCheck.invoke(commandCall)) {
+				command.giveInsufficientPermissionsMessage(channel);
+				return false;
+			}
+			
+			return true;
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			ErrorLogger.LogException(e, channel);
+			return false;
+		}
+	}
+
 	/**
-	 * Creates a command that can have arguments added to it
+	 * Creates the help command.
 	 * 
 	 * @param module The module to put the command in.
 	 * @param command The command's name
 	 * @param description The description of the command for the help.
-	 * @return The new MultiCommand
+	 * @return The help command.
 	 */
-	private MultiCommand addCommand(CommandModule module, String command, String description) {
+	private MultiCommand addHelpCommand(CommandModule module, String command, String description) {
 		if(!isInitialized) {
 			initializeManager();
 		}
 		
-		MultiCommand newCommand = new MultiCommand(prefix, command, description);
+		MultiCommand newCommand = new MultiCommand(module, prefix, command, description);
 		registerCommand(module, command, newCommand);
 		
 		return newCommand;
@@ -219,8 +394,8 @@ public class CommandManager extends ListenerAdapter {
 	private boolean hasPermission(Command command, MessageReceivedEvent event) {
 		Permission[] restrictions = command.getPermissionRestrictions();
 		boolean isDELIBURD = event.getAuthor().getIdLong() == Constant.DELIBURD_ID;
-		
-		if(restrictions == null || event.getMember().hasPermission(restrictions) || isDELIBURD) {
+
+		if(event.getMember().hasPermission(restrictions) || isDELIBURD) {
 			return true;
 		}
 		
@@ -251,7 +426,7 @@ public class CommandManager extends ListenerAdapter {
 	private void initializeManager() {
 		isInitialized = true;
 		
-		addCommand(helpModule, Constant.HELP_COMMAND, helpDescription)
+		addHelpCommand(helpModule, Constant.HELP_COMMAND, helpDescription)
 				.setArgumentDescriptions("A command.")
 				.addArgument(0)
 				.addFinalArgumentPath(this::helpWithCommandArgument, "")
@@ -278,7 +453,7 @@ public class CommandManager extends ListenerAdapter {
 	private void sendHelp(String[] args, MessageReceivedEvent event, MultiCommand selfCommand) {
 		StringBuilder commandHelpString = new StringBuilder(Constant.BOT_NAME + "'s Commands:\n");
 
-		for (var commandModule : commandModuleMap) {
+		for (var commandModule : commandModuleSet) {
 			commandHelpString.append(commandModule.getModuleName())
 					.append(" - ")
 					.append(commandModule.getModuleDescription())
@@ -335,7 +510,6 @@ public class CommandManager extends ListenerAdapter {
 		}
 		
 		module.addCommand(command);
-		commandModuleMap.add(module);
 		commandSet.add(command);
 	}
 	

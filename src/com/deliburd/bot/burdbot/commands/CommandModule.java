@@ -34,6 +34,16 @@ public abstract class CommandModule implements Comparable<CommandModule> {
 		return true;
 	}
 	
+	/**
+	 * Gets the message to send to the user when an invalid command argument is given.
+	 * 
+	 * @param argumentTypeName The argument's type name.
+	 * @return The invalid argument message to send to the user.
+	 */
+	public String getInvalidArgumentMessage(String argumentTypeName) {
+		return "Invalid " + argumentTypeName + " given.";
+	}
+	
 	final void addCommand(Command newCommand) {
 		commandSet.add(newCommand);
 	}

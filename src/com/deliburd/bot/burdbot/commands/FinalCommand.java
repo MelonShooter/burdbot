@@ -8,13 +8,14 @@ public class FinalCommand extends Command {
 	/**
 	 * A bot command with no additional arguments
 	 * 
+	 * @param module The command's module
 	 * @param prefix The command's prefix
 	 * @param command The command's name
 	 * @param description The description of the command for the help.
 	 * @param action The action to run when the command is typed.
 	 */
-	FinalCommand(String prefix, String command, String description, FinalCommandAction action) {
-		super(prefix, command, description);
+	FinalCommand(CommandModule module, String prefix, String command, String description, FinalCommandAction action) {
+		super(module, prefix, command, description);
 		commandAction = action;
 	}
 

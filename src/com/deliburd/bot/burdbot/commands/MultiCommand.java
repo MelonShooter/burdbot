@@ -3,6 +3,7 @@ package com.deliburd.bot.burdbot.commands;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Set;
 
 import com.deliburd.bot.burdbot.Constant;
 import com.deliburd.util.ArrayUtil;
@@ -45,12 +46,13 @@ public class MultiCommand extends Command {
 	/**
 	 * A bot command with additional arguments
 	 * 
+	 * @param module The command's module
 	 * @param prefix The command's prefix
 	 * @param command The command's name
 	 * @param description The description of the command for the help.
 	 */
-	MultiCommand(String prefix, String command, String description) {
-		super(prefix, command, description);
+	MultiCommand(CommandModule module, String prefix, String command, String description) {
+		super(module, prefix, command, description);
 		normalCooldown = commandCooldown.getTotalCooldown();
 		argumentList = new ArrayList<LinkedHashMap<String, String[]>>();
 		argumentAliasLookup = new ArrayList<HashMap<String, String>>();
@@ -166,11 +168,31 @@ public class MultiCommand extends Command {
 		if(isFinalized) {
 			throw new IllegalStateException("This command has already been finalized.");
 		} else if(defaultAction == null) {
-			throw new IllegalStateException("There is no default action to use. You must use this method with an action specified.");
+			throw new IllegalStateException("There is no default action to use. This method must be used with a default action.");
 		}
 		
 		addFinalArgumentPath(defaultAction, arguments);
 
+		return this;
+	}
+	
+	public MultiCommand addAllArgumentPaths() {
+		String[][] argument2dArray = argumentList.stream()
+			.map(argumentWithAliases -> {
+				Set<String> baseArguments = argumentWithAliases.keySet();
+				
+				if(baseArguments.isEmpty()) {
+					String[] variableArgumentArray = {""};
+					return variableArgumentArray;
+				} else {
+					return baseArguments.toArray(String[]::new);
+				}
+			}).toArray(String[][]::new);
+		
+		for(String[] argumentCombination : ArrayUtil.findCrossArrayStringCombinations(argument2dArray)) {
+			addFinalArgumentPath(argumentCombination);
+		}
+		
 		return this;
 	}
 	

@@ -1,91 +1,58 @@
 package com.deliburd.bot.burdbot.commands.argumenttypes;
 
-import com.deliburd.bot.burdbot.Main;
+import java.util.Optional;
+
 import com.deliburd.bot.burdbot.commands.CommandCall;
-import com.deliburd.bot.burdbot.commands.MultiCommand;
 
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.ChannelType;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildChannel;
-import net.dv8tion.jda.api.entities.MessageChannel;
 
-public abstract class ChannelIDArgument extends LongArgument {
-	private ChannelType channelType;
-	private boolean isValidChannel = true;
-	
-	public ChannelIDArgument(int argumentIndex, CommandArgumentType argumentType, long channelID) {
-		super(argumentIndex, argumentType, channelID);
+public abstract class GuildChannelIDArgument extends LongArgument implements IFullyCachedIDArgument<GuildChannel> {
+	protected GuildChannelIDArgument(CommandCall commandCall, int argumentIndex, String channelIDString) {
+		super(commandCall, argumentIndex, channelIDString);
 	}
-
-	public ChannelType getChannelType() {
-		if(channelType == null && isValidChannel()) {
-			GuildChannel channel = getChannel();
-			
-			channelType = channel.getType();
+	
+	/**
+	 * Checks whether or not the channel ID provided was valid by checking if it is the ID of a known channel.
+	 *
+	 *@return Whether the channel ID for this argument is valid.
+	 */
+	@Override
+	public boolean isPossiblyValid() {
+		boolean isPossiblyValid = super.isPossiblyValid();
+		
+		if(isPossiblyValid) {
+			isPossiblyValid = getObjectFromID().isPresent();
 		}
 		
-		return channelType;
+		return isPossiblyValid;
 	}
 	
-	public boolean isValidChannel() {
-		if(isValidChannel) {
-			isValidChannel = getChannel() != null;
-		}
+	/**
+	 * Gets an optional GuildChannel from the channel ID. This will return an empty optional if the channel doesn't or no longer exists.
+	 *
+	 * @return The optional GuildChannel from the channel ID.
+	 * @see GuildChannel
+	 */
+	@Override
+	public Optional<? extends GuildChannel> getObjectFromID() {
+		JDA JDA = getCommandCall().getCommandEvent().getJDA();
 		
-		return isValidChannel;
+		return Optional.ofNullable(JDA.getGuildChannelById(getValue()));
 	}
 	
-	public boolean isValidChannel(long serverID) {
-		boolean isChannelValid;
+	public Optional<? extends GuildChannel> getObjectFromIDInServer() {
+		Guild server = getCommandCall().getCommandEvent().getGuild();
 		
-		if(isValidChannel) {
-			GuildChannel channel = getChannel();
-			isChannelValid = getChannel() != null && channel.getGuild().getIdLong() == serverID;
-		} else {
-			isChannelValid = false;
-		}
-		
-		return isChannelValid;
+		return Optional.ofNullable(server.getGuildChannelById(getValue()));
 	}
 	
-	public boolean isValidChannelOrNotify(CommandCall commandCall, boolean checkServer) {
-		boolean isChannelValid;
-		
-		if(checkServer) {
-			isChannelValid = isValidChannel(commandCall.getCommandEvent().getGuild().getIdLong());
-		} else {
-			isChannelValid = isValidChannel();
-		}
-		
-		if(!isChannelValid) {
-			giveInvalidChannelIDMessage(commandCall);
-		}
-		
-		return isValidChannel;
-	}
-	
-	public GuildChannel getChannel() {
-		return Main.getJDAInstance().getGuildChannelById(getLong());
-	}
-	
-	public GuildChannel getChannelOrNotify(CommandCall commandCall, boolean checkServer) {
-		GuildChannel channel = getChannel();
-		long commandServerID = commandCall.getCommandEvent().getGuild().getIdLong();
-		
-		if(channel == null || checkServer && channel.getGuild().getIdLong() != commandServerID) {
-			giveInvalidChannelIDMessage(commandCall);
-			channel = null;
-		}
-		
-		return channel;
-	}
-	
-	public long getChannelID() {
-		return getLong();
-	}
-	
-	private void giveInvalidChannelIDMessage(CommandCall commandCall) {
-		MessageChannel channelToSendMessage = commandCall.getCommandEvent().getChannel();
-		MultiCommand command = commandCall.getMultiCommand();
-		command.giveInvalidArgumentMessage(channelToSendMessage, "Invalid channel ID given.");
-	}
+	/**
+	 * Gets the channel type of the channel ID this object should hold.
+	 * 
+	 * @return The channel type of the channel ID this object should hold.
+	 */
+	public abstract ChannelType getChannelType();
 }
