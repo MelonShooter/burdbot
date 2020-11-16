@@ -26,10 +26,8 @@ public class SpanishServerEvents extends ListenerAdapter {
     		"-",
     		"--",
     		"---",
-    		";;",
     		"!",
     		"!!",
-    		"/"
     	};
     	
     	boolean containsMusicPrefix = false;
