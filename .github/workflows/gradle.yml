@@ -33,24 +33,14 @@ jobs:
         run: chmod +x gradlew
       - name: Build with Gradle
         run: ./gradlew build
-      - name: Rename the shadowjar and remove other jar
-        run: |
-          rm build/libs/$(ls -1 build/libs | grep -P '(?<!all)\.jar')
-          mv build/libs/$(ls -1 build/libs) build/libs/$(ls -1 build/libs | sed "s/.*\(-all.jar\)/$GITHUB_SHA\1/")
-      - name: Upload jar to VPS
-        uses: SamKirkland/FTP-Deploy-Action@2.0.0
+      - name: Create Release
+        uses: actions/create-release@v1
         env:
-          FTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
-          FTP_SERVER: ${{ secrets.SFTP_HOST }}
-          FTP_PASSWORD: ${{ secrets.SFTP_PWD }}
-          PORT: ${{ secrets.SFTP_PORT }}
-          LOCAL_DIR: build/libs
-          METHOD: sftp
-      - name: Restart BurdBot
-        env:
-          HOST: ${{ secrets.SFTP_HOST }}
-          PORT: ${{ secrets.PORT }}
-          ID: ${{ secrets.SERVER_ID }}
-          API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
-        run: |
-          curl "http://$HOST:$PORT/api/client/servers/$ID/power" -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" -H "Accept: Application/vnd.pterodactyl.v1+json" -X POST -d "{ \"signal\": \"restart\" }" -v -L
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: auto
+          release_name: Automated Bot Jar Build
+          body: |
+            This release was created automatically.
+          draft: false
+          prerelease: false
