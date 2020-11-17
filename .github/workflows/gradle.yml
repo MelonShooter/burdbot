@@ -33,14 +33,33 @@ jobs:
         run: chmod +x gradlew
       - name: Build with Gradle
         run: ./gradlew build
+      - name: Rename the shadowjar
+        run: |
+          mv build/libs/$(ls build/libs | grep 'all\.jar$') build/libs/all.jar
       - name: Create Release
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: auto
+          tag_name: auto-workflow-${{ github.run_id }}
           release_name: Automated Bot Jar Build
           body: |
             This release was created automatically.
-          draft: false
+          draft: true
           prerelease: false
+      - name: Upload Release Asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/libs/all.jar
+          asset_name: ${{ github.action }}.jar
+          asset_content_type: application/java-archive
+      - name: Publish Release
+        uses: eregon/publish-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_id: ${{ steps.create_release.outputs.id }}
