@@ -1,16 +1,17 @@
 package com.deliburd.util;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 
 public class AdvancedTextReader {
 	private File file;
-	private String[] fileSentences;
+	private BufferedReader fileSentences;
 	private int fileLength;
-	private int filePosition = 0;
-	
+
 	public AdvancedTextReader(File file) {
 		this.file = file;
 	}
@@ -21,7 +22,7 @@ public class AdvancedTextReader {
 		} else if (fileSentences != null) {
 			return;
 		}
-		
+
 		String fileText;
 		
 		try {
@@ -29,43 +30,50 @@ public class AdvancedTextReader {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+
+		fileText = fileText.replaceAll("(?<!Mr\\.|Dr\\.|Mrs\\.|Ms\\.|\\..\\.)(?<=\\?|!|\\.) ", "\n");
+		//To add a new abbreviation, type |abbrev\\. in the negative lookbehind
 		
+		if(fileText.isBlank()) {
+			return; // Makes fileSentences stay null so getNextExcerptInSentences() returns ""
+		}
+		
+		fileSentences = new BufferedReader(new StringReader(fileText));
 		fileLength = fileText.length();
-		fileSentences = fileText.split("(?<!Mr\\.|Dr\\.|Mrs\\.|Ms\\.|\\..\\.)(?<=\\?|!|\\.) "); //To add a new abbreviation, type |abbrev\\. in the neg lookbehind
+		
+		try {
+			fileSentences.mark(fileLength + 1);
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 	
 	public String getNextExcerptInSentences(int approximateCharacterCount) {
-		if(fileSentences == null) {
-			return null;
-		} else if(fileLength < approximateCharacterCount) {
-			return String.join(" ", fileSentences);
-		} else if(approximateCharacterCount == 0) {
-			
+		if(fileSentences == null || approximateCharacterCount == 0) {
+			return "";
 		}
+
+		StringBuilder text = new StringBuilder(approximateCharacterCount + 128);
 		
-		int characterCount = 0;
-		int characterDifference = approximateCharacterCount;
-		StringBuilder text = new StringBuilder(approximateCharacterCount);
-		
-		for(int sentenceNumber = filePosition; sentenceNumber < fileSentences.length; sentenceNumber++) {
-			characterCount += fileSentences[sentenceNumber].length();
-			
-			int newCharacterDifference = Math.abs(approximateCharacterCount - characterCount);
-			
-			if(newCharacterDifference < characterDifference) {
-				if(sentenceNumber == fileSentences.length - 1 && approximateCharacterCount > characterCount - fileSentences[sentenceNumber].length()) { // Last index of the sentence array and had string going to last sentence from the beginning.
-					return text.toString();
+		try {
+			while(text.length() < approximateCharacterCount) {
+				String sentence = fileSentences.readLine();
+				
+				if(sentence == null) {
+					fileSentences.reset();
+					fileSentences.mark(fileLength + 1);
+					sentence = fileSentences.readLine();
 				}
 				
-				characterDifference = newCharacterDifference;
-				text.append(fileSentences[sentenceNumber] + " ");
-			} else {
-				filePosition = sentenceNumber; //Set the new position in the file to here.
-				return text.toString();
+				text.append(sentence)
+						.append(" ");
 			}
+			
+			text.deleteCharAt(text.length() - 1); // Delete space after last sentence
+		} catch(IOException e) {
+			return "";
 		}
 		
-		//Went to the end of the file. go back to the beginning.
-		return getNextExcerptInSentences(approximateCharacterCount);
+		return text.toString();
 	}
 }

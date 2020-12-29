@@ -78,9 +78,18 @@ public class Main extends ListenerAdapter {
 				.setDefaultAction(new MultiCommandAction() {
 					@Override
 					public void OnCommandRun(String[] args, MessageReceivedEvent event, MultiCommand command) {
+						MessageChannel channel = event.getChannel();
+						
 						if (!ReadingManager.isRegeneratingTexts()) {
-							MessageChannel channel = event.getChannel();
-							BotUtil.sendMessage(channel, "```" + ReadingManager.fetchText(args[0], args[1]) + "```");
+							String text = ReadingManager.fetchText(args[0], args[1]);
+							
+							if(text.isEmpty()) {
+								ErrorLogger.LogIssue("User tried to fetch text, but returned text was blank.", channel);
+							} else {
+								BotUtil.sendMessage(channel, "```" + text + "```");
+							}
+						} else {
+							BotUtil.sendMessage(channel, "I'm currently regenerating the texts. Please wait a moment.");
 						}
 					}
 				});

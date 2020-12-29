@@ -3,17 +3,16 @@ package com.deliburd.util.scraper;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import com.deliburd.readingpuller.TextConstant;
@@ -24,12 +23,13 @@ import com.deliburd.util.ErrorLogger;
 import com.deliburd.util.scraper.ScraperManager.ScraperType;
 
 public class LaNacionSpanishScraper implements Scraper {
+	private static final int MAX_FAIL_COUNT = 10;
 	private static final String LA_NACION_LINK_PAGE = "https://www.lanacion.com.ar/cultura";
 	private static final String LA_NACION_MAIN_PAGE = "https://www.lanacion.com.ar";
-	private static double lastLinkPull = 0;
-	private static ArrayList<String> laNacionArticles = new ArrayList<String>(32);
+	private static long lastLinkPull = 0;
+	private static List<String> laNacionArticles;
 
-	private ArrayList<String> getArticleLinks() {
+	private List<String> getArticleLinks() {
 		Document laNacionLinkPage;
 
 		try {
@@ -38,50 +38,16 @@ public class LaNacionSpanishScraper implements Scraper {
 			return null;
 		}
 
-		Elements aTagLinksTitles = laNacionLinkPage.select("article.nota > h2 > a[href]");
-		
-		var linkList = aTagLinksTitles.eachAttr("href");
-		var parsedLinkList = ArrayUtil.prependAndAppendStringToList(LA_NACION_MAIN_PAGE, linkList, "/////");
-		
-		return ArrayUtil.concatStringLists(parsedLinkList, aTagLinksTitles.eachText());
+		Elements articleLinks = laNacionLinkPage.select("article.mod-article > div > section > figure > a[href]");
+		articleLinks.addAll(laNacionLinkPage.select("article.mod-caja-nota > div > section > figure > a[href]")); // Add links in the most popular bar.
+
+		return ArrayUtil.prependStringToList(LA_NACION_MAIN_PAGE, articleLinks.eachAttr("href"));
 	}
 	
-	private String stripArticle(Document story, String title) {
-		String sectionClass = "section#cuerpo";
-		String headerContent = "p.capital";
-		String endContent = "section.listado.ademas.redaccion.notas4.floatFix";
-		Element body = story.select(sectionClass).first();
+	private String stripArticle(Document story) {
+		Elements paragraphs = story.select("p.com-paragraph");
 		
-		if(body == null) {
-			return "";
-		}
-		
-		body = body.children().select(headerContent).first();
-		
-		if(body == null) {
-			return "";
-		}
-		
-		Elements articleText = new Elements();
-		articleText.add(body);
-
-		boolean end = false;
-		
-		while(!end) {
-			body = body.nextElementSibling();
-			
-			if(body == null) {
-				return "";
-			}
-
-			if(body.is("p")) {
-				articleText.add(body);
-			} else if(body.is(endContent)) {
-				end = true;
-			}
-		}
-		
-		return articleText.text();
+		return paragraphs.text();
 	}
 	
 	@Override
@@ -97,7 +63,7 @@ public class LaNacionSpanishScraper implements Scraper {
 				lastLinkPull = currentTime;
 			}
 			
-			if(laNacionArticles == null) {
+			if(laNacionArticles == null || laNacionArticles.isEmpty()) {
 				throw new Exception("Links from La nacion could not be fetched");
 			}
 			
@@ -106,15 +72,8 @@ public class LaNacionSpanishScraper implements Scraper {
 			laNacionArticles.remove(randomLinkIndex);
 		}
 		
-		Pattern link = Pattern.compile("^.*/////");
-		Matcher matchLink = link.matcher(randomLink);
-		
 		try {
-			if(matchLink.find()) {
-				return stripArticle(Jsoup.connect(randomLink.substring(0, matchLink.end())).get(), randomLink.substring(matchLink.end()));
-			} else {
-				throw new Exception("Link from La nacion malformed. Link + Title: " + randomLink);
-			}
+			return stripArticle(Jsoup.connect(randomLink).get());
 		} catch (IOException e) {
 			return "";
 		}
@@ -124,15 +83,22 @@ public class LaNacionSpanishScraper implements Scraper {
 	public String[] getRandomTextBodies(int numberOfTexts) throws ExecutionException {
 		var textBodies = new String[numberOfTexts];
 		var futureTexts = new ArrayList<Future<String>>();
+		AtomicInteger failedFetchCount = new AtomicInteger();
 		
 		ExecutorService executorService = Executors.newCachedThreadPool();
 		
 		for(int i = 0; i < numberOfTexts; i++) {
 			var futureText = executorService.submit( new Callable<String>() {
-					@Override
+				@Override
 				public String call() throws Exception {
 					String text = getRandomTextBody();
 					while(text != null && text.equals("")) {
+						int failedCount = failedFetchCount.incrementAndGet();
+						
+						if(failedCount > MAX_FAIL_COUNT) {
+							throw new IllegalStateException("More than 5 articles total have failed. Cancelling the fetch retry.");
+						}
+						
 						text = getRandomTextBody();
 					}
 
@@ -157,9 +123,9 @@ public class LaNacionSpanishScraper implements Scraper {
 				}
 			} catch (InterruptedException e) {
 				ErrorLogger.LogException(e);
-			} finally {
-				i++;
 			}
+
+			i++;
 		}
 		
 		return textBodies;

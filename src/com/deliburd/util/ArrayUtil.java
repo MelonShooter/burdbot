@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class ArrayUtil {
 	private ArrayUtil() {}
@@ -13,10 +14,14 @@ public class ArrayUtil {
 	 * Gets a random index within the given collection
 	 * 
 	 * @param <T> The type that the collection holds
-	 * @param collection The collection to find an index for
+	 * @param collection The collection to find an index for. This cannot be empty.
 	 * @return The random index within the collection
 	 */
 	public static <T> int randomCollectionIndex(Collection<T> collection) {
+		if(collection.isEmpty()) {
+			throw new IllegalArgumentException("This collection cannot be empty.");
+		}
+		
 		return ThreadLocalRandom.current().nextInt(collection.size());
 	}
 	
@@ -48,28 +53,16 @@ public class ArrayUtil {
 	}
 	
 	/**
-	 * Prepends and appends a string to each value in a list of strings
+	 * Prepends a string to each value in a list of strings
 	 * 
 	 * @param stringToPrepend The string to prepend each value with
-	 * @param list The list that contains the values tp prepend and append
-	 * @param stringToAppend The string to append each value with
+	 * @param list The list that contains the values to prepend
 	 * @return The new list containing the modified values
 	 */
-	public static List<String> prependAndAppendStringToList(String stringToPrepend, List<String> list, String stringToAppend) {
-		var listCopy = new ArrayList<String>(list.size());
-		var concatenatedValue = new StringBuilder();
-		
-		list.forEach(string -> listCopy.add(string));
-		
-		for(int i = 0; i < list.size(); i++) {
-			concatenatedValue.append(stringToPrepend)
-					.append(list.get(i))
-					.append(stringToAppend);
-			listCopy.set(i, concatenatedValue.toString());
-			concatenatedValue.setLength(0);
-		}
-		
-		return listCopy;
+	public static List<String> prependStringToList(String stringToPrepend, List<String> list) {
+		return list.stream()
+				.map(string -> stringToPrepend + string)
+				.collect(Collectors.toList());
 	}
 
 	/**
