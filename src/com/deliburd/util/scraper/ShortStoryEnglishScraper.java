@@ -180,8 +180,16 @@ public class ShortStoryEnglishScraper implements Scraper {
 		Elements storyText = new Elements();
 		boolean end = false;
 		
+		if(body == null) {
+			return "";
+		}
+		System.out.println(story.location());
 		while(!end) {
 			body = body.nextElementSibling();
+			
+			if(body == null) {
+				return "";
+			}
 
 			if(body.is("p")) {
 				storyText.add(body);
