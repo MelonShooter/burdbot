@@ -15,14 +15,13 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
-import com.deliburd.readingpuller.TextConstant;
-import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
-import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
 import com.deliburd.util.ArrayUtil;
 import com.deliburd.util.ErrorLogger;
+import com.deliburd.util.scraper.ReadingManager.ScraperDifficulty;
+import com.deliburd.util.scraper.ReadingManager.ScraperLanguage;
 import com.deliburd.util.scraper.ScraperManager.ScraperType;
 
-public class LaNacionSpanishScraper implements Scraper {
+public class LaNacionSpanishScraper implements IScraper {
 	private static final int MAX_FAIL_COUNT = 10;
 	private static final String LA_NACION_LINK_PAGE = "https://www.lanacion.com.ar/cultura";
 	private static final String LA_NACION_MAIN_PAGE = "https://www.lanacion.com.ar";

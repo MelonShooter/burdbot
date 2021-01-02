@@ -5,14 +5,13 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.deliburd.readingpuller.TextConstant;
-import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
-import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
 import com.deliburd.util.ArrayUtil;
 import com.deliburd.util.ErrorLogger;
+import com.deliburd.util.scraper.ReadingManager.ScraperDifficulty;
+import com.deliburd.util.scraper.ReadingManager.ScraperLanguage;
 import com.deliburd.util.scraper.ScraperManager.ScraperType;
 
-public class GutenburgEnglishScraper implements Scraper {
+public class GutenburgEnglishScraper implements IScraper {
 	private static ArrayList<File> gutenburgFiles = new ArrayList<File>();
 	
 	@Override

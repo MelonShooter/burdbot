@@ -11,7 +11,7 @@ public class ScraperManager {
 		EnglishStory
 	}
 	
-	public static EnumMap<ScraperType, Scraper> scraperMap = new EnumMap<>(ScraperType.class);
+	public static EnumMap<ScraperType, IScraper> scraperMap = new EnumMap<>(ScraperType.class);
 	
 	static {
 		scraperMap.put(ScraperType.Gutenburg, new GutenburgEnglishScraper());
@@ -22,11 +22,11 @@ public class ScraperManager {
 	
 	private ScraperManager() {}
 	
-	public static Scraper getScraper(ScraperType scraper) {
+	public static IScraper getScraper(ScraperType scraper) {
 		return scraperMap.get(scraper);
 	}
 	
-	public static Collection<Scraper> getAllScrapers() {
+	public static Collection<IScraper> getAllScrapers() {
 		return scraperMap.values();
 	}
 }

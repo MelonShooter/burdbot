@@ -1,4 +1,4 @@
-package com.deliburd.readingpuller;
+package com.deliburd.util.scraper;
 
 import java.io.File;
 

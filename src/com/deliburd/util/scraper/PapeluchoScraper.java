@@ -5,14 +5,13 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.deliburd.readingpuller.TextConstant;
-import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
-import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
 import com.deliburd.util.ArrayUtil;
 import com.deliburd.util.ErrorLogger;
+import com.deliburd.util.scraper.ReadingManager.ScraperDifficulty;
+import com.deliburd.util.scraper.ReadingManager.ScraperLanguage;
 import com.deliburd.util.scraper.ScraperManager.ScraperType;
 
-public class PapeluchoScraper implements Scraper {
+public class PapeluchoScraper implements IScraper {
 	private static ArrayList<File> papeluchoFiles = new ArrayList<File>(13);
 
 	@Override

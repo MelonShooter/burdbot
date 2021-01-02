@@ -17,14 +17,13 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import com.deliburd.readingpuller.TextConstant;
-import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
-import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
 import com.deliburd.util.ArrayUtil;
 import com.deliburd.util.ErrorLogger;
+import com.deliburd.util.scraper.ReadingManager.ScraperDifficulty;
+import com.deliburd.util.scraper.ReadingManager.ScraperLanguage;
 import com.deliburd.util.scraper.ScraperManager.ScraperType;
 
-public class ShortStoryEnglishScraper implements Scraper {
+public class ShortStoryEnglishScraper implements IScraper {
 	private static final String SHORTSTORYLINKPAGE = "https://easystoriesinenglish.com/category/beginner/";
 	private static double lastLinkPull = 0;
 	private static ArrayList<String> storyLinks = new ArrayList<String>(32);

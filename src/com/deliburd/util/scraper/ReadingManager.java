@@ -1,4 +1,4 @@
-package com.deliburd.readingpuller;
+package com.deliburd.util.scraper;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -12,7 +12,6 @@ import java.util.concurrent.ExecutionException;
 import com.deliburd.util.AdvancedTextReader;
 import com.deliburd.util.ErrorLogger;
 import com.deliburd.util.FileUtil;
-import com.deliburd.util.scraper.ScraperManager;
 
 public class ReadingManager {
 	public enum ScraperLanguage {
