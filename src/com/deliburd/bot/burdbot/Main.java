@@ -212,7 +212,7 @@ public class Main extends ListenerAdapter {
 		ActivitySwitcher.addState(",help | Making AOTW/VC recordings", 3, TimeUnit.DAYS);
 		ActivitySwitcher.addState(",help | Fetching pronunciations", 1, TimeUnit.DAYS);
 
-		JDAInstance = burdRecorder.addEventListeners(new SpanishServerEvents(), AudioReceiverHandler.getHandler(), MessageResponseQueue.getQueue())
+		JDAInstance = burdRecorder.addEventListeners(AudioReceiverHandler.getHandler(), MessageResponseQueue.getQueue())
 				.build().awaitReady();
     }
 	
