@@ -20,10 +20,6 @@ import javax.security.auth.login.LoginException;
 import com.deliburd.bot.burdbot.commands.CommandManager;
 import com.deliburd.bot.burdbot.commands.MultiCommand;
 import com.deliburd.bot.burdbot.commands.MultiCommandAction;
-import com.deliburd.bot.burdbot.forvoscraper.EnglishForvoCountries;
-import com.deliburd.bot.burdbot.forvoscraper.IForvoCountry;
-import com.deliburd.bot.burdbot.forvoscraper.PronunciationFetcher;
-import com.deliburd.bot.burdbot.forvoscraper.SpanishForvoCountries;
 import com.deliburd.readingpuller.ReadingManager;
 import com.deliburd.readingpuller.ReadingManager.ScraperDifficulty;
 import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
@@ -60,8 +56,6 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 
 public class Main extends ListenerAdapter {
-	private static final EnglishForvoCountries defaultEnglishCountry = EnglishForvoCountries.UNITEDSTATES;
-	private static final SpanishForvoCountries defaultSpanishCountry = SpanishForvoCountries.URUGUAY;
 	private static volatile JDA JDAInstance;
 	
 	public static void main(String[] args) throws LoginException, InterruptedException {
@@ -189,26 +183,6 @@ public class Main extends ListenerAdapter {
 						+ "channel the audio file was sent to unless a link to the message was provided instead of an ID.")
 				.finalizeCommand();
 		
-		String findPronunciationCommandDescription = "Finds the pronunciation of a word in English or Spanish and uploads it as an MP3 file.";
-		MultiCommand pronunciationCommand = commandManager.addCommand("pronounce", findPronunciationCommandDescription)
-				.setMinArguments(1)
-				.addArgument(0)
-				.setDefaultAction(Main::onPronounce)
-				.addFinalArgumentPath("")
-				.addArgument(1, "english", "eng", "en", "inglés")
-				.addArgument(1, "spanish", "sp", "español", "esp")
-				.addFinalArgumentPath("", "english")
-				.addFinalArgumentPath("", "spanish");
-		
-		addCountryArguments(SpanishForvoCountries.values(), pronunciationCommand);
-		addCountryArguments(EnglishForvoCountries.values(), pronunciationCommand);
-		
-		pronunciationCommand.setArgumentDescriptions("The word to look for the pronunciation of", "The language of the word. "
-						+ "You can also specify a country instead of a language. If a country is specified, a pronunciation available "
-						+ "that is as similar as possible to the given country's accent(s) will be provided. This argument is optional.")
-				.setCooldown(10)
-				.finalizeCommand();
-		
 		ActivitySwitcher.addState(",help | Making AOTW/VC recordings", 3, TimeUnit.DAYS);
 		ActivitySwitcher.addState(",help | Fetching pronunciations", 1, TimeUnit.DAYS);
 
@@ -223,78 +197,6 @@ public class Main extends ListenerAdapter {
 	 */
 	public static JDA getJDAInstance() {
 		return JDAInstance;
-	}
-	
-	private static void addCountryArguments(IForvoCountry[] countries, MultiCommand command) {
-		for(IForvoCountry country : countries) {
-			String lowercaseCountryName = country.toString().toLowerCase();
-			String properCountryName = country.getPrettyName().replaceAll(" ", "");
-			String countryAbbreviation = country.getCountryAbbreviation();
-			command.addArgument(1, properCountryName, lowercaseCountryName, countryAbbreviation)
-					.addFinalArgumentPath("", lowercaseCountryName)
-					.addFinalArgumentPath("", properCountryName)
-					.addFinalArgumentPath("", countryAbbreviation);
-		}
-	}
-	
-	private static void onPronounce(String[] args, MessageReceivedEvent event, MultiCommand command) {
-		TextChannel channel = event.getTextChannel();
-		String word = args[0];
-		
-		if(StringUtil.ContainsWhitespace(word)) {
-			command.giveInvalidArgumentMessage(channel, "This word cannot contain whitespace.");
-			return;
-		} else if(!event.getGuild().getSelfMember().hasPermission(channel, Permission.MESSAGE_ATTACH_FILES)) {
-			BotUtil.sendMessage(channel, "I don't have permission to atttach files in this channel.");
-			return;
-		}
-		
-		BotUtil.sendMessage(channel, "Finding pronunciation for ``" + word + "``...");
-		
-		BiConsumer<File, String> onEnglishSuccess;
-		BiConsumer<File, String> onSpanishSuccess;
-		
-		if(args.length > 1) {
-			EnglishForvoCountries englishCountry = null;
-			SpanishForvoCountries spanishCountry = null;
-			Runnable onFailure = () -> onPronunciationFetcherFailure(channel);
-			String firstArgument = args[1];
-			
-			if(firstArgument.equals("english")) {
-				englishCountry = defaultEnglishCountry;
-			} else if(firstArgument.equals("spanish")) {
-				spanishCountry = defaultSpanishCountry;
-			} else {
-				String uppercaseCountry = firstArgument.toUpperCase();
-				
-				try {
-					spanishCountry = SpanishForvoCountries.valueOf(uppercaseCountry);
-				} catch(IllegalArgumentException e) {}
-				
-				if(spanishCountry == null) {
-					try {
-						englishCountry = EnglishForvoCountries.valueOf(uppercaseCountry);
-					} catch(IllegalArgumentException e) {}
-				}
-			}
-			
-			if(englishCountry != null) {
-				onEnglishSuccess = (file, prettyName) -> uploadFile(word, file, channel, prettyName, false);
-				PronunciationFetcher.fetchEnglishPronunciation(word, englishCountry, onEnglishSuccess, onFailure);
-			} else if(spanishCountry != null) {
-				onSpanishSuccess = (file, prettyName) -> uploadFile(word, file, channel, prettyName, true);
-				PronunciationFetcher.fetchSpanishPronunciation(word, spanishCountry, onSpanishSuccess, onFailure);
-			} else {
-				ErrorLogger.LogIssue("Could not resolve any country for the pronunciation command", channel);
-			}
-		} else {
-			AtomicInteger failureCounter = new AtomicInteger();
-			onEnglishSuccess = (file, prettyName) -> uploadFile(word, file, channel, prettyName, false);
-			onSpanishSuccess = (file, prettyName) -> uploadFile(word, file, channel, prettyName, true);
-			Runnable onFailure = () -> onPronunciationFetcherFailure(channel, failureCounter);
-			PronunciationFetcher.fetchEnglishPronunciation(word, defaultEnglishCountry, onEnglishSuccess, onFailure);
-			PronunciationFetcher.fetchSpanishPronunciation(word, defaultSpanishCountry, onSpanishSuccess, onFailure);
-		}
 	}
 	
 	private static void uploadFile(String word, File file, TextChannel channel, String countryPrettyName, boolean isSpanish) {
