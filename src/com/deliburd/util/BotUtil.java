@@ -26,30 +26,8 @@ public class BotUtil {
 	private BotUtil() {}
 	
 	/**
-	 * Checks if the bot has a certain voice permission in the given voice cahnnel
-	 * 
-	 * @param channel The voice channel to check in
-	 * @param voicePermission The permission to check for
-	 * @return Whether the bot has the voice permission in the given voice channel.
-	 */
-	public static boolean hasVoiceChannelPermission(VoiceChannel channel, Permission voicePermission) {
-		return channel.getGuild().getSelfMember().hasPermission(channel, voicePermission);
-	}
-	
-	/**
-	 * Checks if a voice channel is full
-	 * 
-	 * @param channel The voice channel to check
-	 * @return Whether the voice channel is full
-	 */
-	public static boolean voiceChannelIsFull(VoiceChannel channel) {
-		return channel.getUserLimit() != 0 && channel.getUserLimit() <= channel.getMembers().size();
-	}
-	
-	/**
 	 * Checks if the bot has write permissions. If the channel isn't a TextChannel provided, this returns true
-	 * 
-	 * @param guild The guild
+	 *
 	 * @param channel The channel
 	 * @return Whether the bot has write permissions.
 	 */
@@ -96,16 +74,6 @@ public class BotUtil {
 	}
 	
 	/**
-	 * Queues a message to be sent. Will silently fail if it can't be sent
-	 * 
-	 * @param channel The channel to send the emssage to
-	 * @param message The message's content
-	 */
-	public static void sendMessage(MessageChannel channel, MessageBuilder message) {
-		sendMessage(channel, message.build().getContentRaw());
-	}
-	
-	/**
 	 * Queues a message to be sent. Will try sending a DM if it fails.
 	 * 
 	 * @param channel The channel to send the emssage to
@@ -122,7 +90,7 @@ public class BotUtil {
 	 * 
 	 * @param channel The channel to send the emssage to
 	 * @param message The message's content
-	 * @param user The user to send the fallback DM to.
+	 * @param userID The user to send the fallback DM to.
 	 * @param consumer The callback to run on success
 	 */
 	public static void sendMessage(MessageChannel channel, CharSequence message, long userID, Consumer<Message> consumer) {
@@ -149,17 +117,6 @@ public class BotUtil {
 				sendDM(user, message, consumer);
 			});
 		}
-	}
-	
-	/**
-	 * Queues a message to be sent. Will try sending a DM if it fails.
-	 * 
-	 * @param channel The channel to send the emssage to
-	 * @param message The message's content
-	 * @param user The user to send the DM to if the initial message fails
-	 */
-	public static void sendMessage(TextChannel channel, CharSequence message, User user) {
-		sendMessage(channel, message, user, null);
 	}
 	
 	/**
@@ -190,16 +147,6 @@ public class BotUtil {
 	}
 	
 	/**
-	 * Sends a DM to the specified user with the given message.
-	 * 
-	 * @param user The user to send the DM to
-	 * @param message The DM's content.
-	 */
-	public static void sendDM(User user, CharSequence message) {
-		sendDM(user, message, null);
-	}
-	
-	/**
 	 * Sends a DM to the specified user with the given message and runs the callback provided. 
 	 * 
 	 * @param user The user to send the DM to
@@ -219,24 +166,6 @@ public class BotUtil {
 	}
 	
 	/**
-	 * Deletes the last DM sent by the bot asynchronously to the user.
-	 * 
-	 * @param user The user's DM
-	 */
-	public static void deleteLastDM(User user) {
-		user.openPrivateChannel().queue(channel -> {
-			channel.getIterableHistory().forEachAsync(message -> {
-				if(message.getAuthor().getIdLong() != user.getIdLong()) {
-					message.delete().queue(null, error -> ErrorLogger.LogException(error));
-					return false;
-				}
-				
-				return true;
-			}, error -> ErrorLogger.LogException(error));
-		});
-	}
-	
-	/**
 	 * Returns whether the throwable is an ErrorResponseException and if it equals the given ErrorResponse
 	 *
 	 * @param error The error
@@ -249,54 +178,6 @@ public class BotUtil {
 		}
 		
 		return false;
-	}
-	
-	/**
-	 * Gets a count of all users in a channel
-	 * 
-	 * @param channel The channel to get the count of
-	 * @return The number of users in a channel
-	 */
-	public static int voiceMemberCount(VoiceChannel channel) {
-		return channel.getMembers().size();
-	}
-	
-	/**
-	 * Gets a count of all humans in a channel
-	 * 
-	 * @param channel The channel to get the coutn of
-	 * @return The number of humans in a channel
-	 */
-	public static int voiceMemberCountHumans(VoiceChannel channel) {
-		int count = 0;
-
-		for(var member : channel.getMembers()) {
-			if(!member.getUser().isBot()) {
-				count++;
-			}
-		}
-		
-		return count;
-	}
-	
-	/**
-	 * Discord's file size limit isn't the true file size limit. This method returns a safe file limit
-	 * based on the server.
-	 * 
-	 * @param server The server to check the file size limit of
-	 * @return The file size limit in bytes
-	 */
-	public static long getFileSizeLimit(Guild server) {
-		return server.getMaxFileSize() - 512;
-	}
-	
-	/**
-	 * Discord's file size limit isn't the true file size limit. This method returns the safe default file limit
-	 * 
-	 * @return The file size limit in bytes
-	 */
-	public static int getFileSizeLimit() {
-		return Message.MAX_FILE_SIZE - 512;
 	}
 	
 	/**
@@ -354,25 +235,5 @@ public class BotUtil {
 	 */
 	public static String stripWhiteSpace(CharSequence text) {
 		return whitespaceStripper.matcher(text).replaceAll("");
-	}
-	
-	/**
-	 * Returns whether the CharSequence contains a possible ping
-	 * 
-	 * @param text The text to check
-	 * @return Whether the text contains a possible ping
-	 */
-	public static boolean containsPing(CharSequence text) {
-		return pingPattern.matcher(text).find();
-	}
-	
-	/**
-	 * Returns whether the text is a possible discord link.
-	 * 
-	 * @param text The text to check.
-	 * @return Whether the text is a possible discord link.
-	 */
-	public static boolean isPossibleDiscordLink(String text) {
-		return text.startsWith("http") || text.startsWith("www.") || text.startsWith("discord");
 	}
 }

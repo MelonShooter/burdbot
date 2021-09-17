@@ -16,7 +16,6 @@ import com.deliburd.readingpuller.ReadingManager.ScraperLanguage;
 import com.deliburd.util.BotUtil;
 import com.deliburd.util.ErrorLogger;
 import com.deliburd.util.FileUtil;
-import com.deliburd.util.MessageResponseQueue;
 import com.deliburd.util.ActivitySwitcher;
 
 import net.dv8tion.jda.api.JDA;
@@ -76,8 +75,7 @@ public class Main {
 		ActivitySwitcher.addState(",help | Making AOTW/VC recordings", 3, TimeUnit.DAYS);
 		ActivitySwitcher.addState(",help | Fetching pronunciations", 1, TimeUnit.DAYS);
 
-		JDAInstance = burdRecorder.addEventListeners(MessageResponseQueue.getQueue())
-				.build().awaitReady();
+		JDAInstance = burdRecorder.build().awaitReady();
     }
 	
 	/**

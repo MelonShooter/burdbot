@@ -79,38 +79,4 @@ public final class FileUtil {
 
 		return folder.list().length == 0;
 	}
-
-	/**
-	 * Returns whether a folder is empty or does not exist
-	 * 
-	 * @param folder The folder to check. Must not be null.
-	 * @return Whether the folder is empty or does not exist
-	 */
-	public static boolean isFolderEmptyOrDoesNotExist(File folder) {
-		if(folder == null) {
-			throw new IllegalArgumentException("Argument supplied is null.");
-		}
-		
-		return !folder.exists() || isFolderEmpty(folder);
-	}
-
-	/**
-	 * Shallowly deletes files in the specified folder with a condition
-	 * 
-	 * @param baseFolder The folder to delete files in
-	 * @param condition The condition to delete files with. Null for no condition.
-	 */
-	public static void deleteFiles(File baseFolder, Predicate<File> condition) {
-		if(baseFolder == null || !baseFolder.isDirectory()) {
-			throw new IllegalArgumentException("The base folder specified must be a folder and can't be null.");
-		}
-		
-		File[] files = baseFolder.listFiles();
-		
-		for(var file : files) {
-			if(file.isFile() && (condition == null || condition.test(file))) {
-				file.delete();
-			}
-		}
-	}
 }
