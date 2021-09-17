@@ -31,7 +31,9 @@ repositories {
 }
 
 dependencies {
-  implementation 'net.dv8tion:JDA:4.2.0_180'
+  implementation ('net.dv8tion:JDA:4.2.0_180') {
+    exclude module: 'opus-java'
+  }
   implementation 'org.jsoup:jsoup:1.13.1'
   implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.1'
   implementation group: 'com.cloudburst', name: 'java-lame', version: '3.98.4'
