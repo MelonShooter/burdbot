@@ -162,7 +162,8 @@ public class CommandManager extends ListenerAdapter {
 	@Override
 	public void onMessageReceived(MessageReceivedEvent event) {
 		boolean canWrite = BotUtil.hasWritePermission(event);
-		if(event.getChannelType() == ChannelType.TEXT && canWrite && !event.getAuthor().isBot()) {
+		ChannelType type = event.getChannelType();
+		if((type == ChannelType.TEXT || type.isThread()) && canWrite && !event.getAuthor().isBot()) {
 			String prefix = Constant.COMMAND_PREFIX;
 			int minCommandLength = prefix.length() + 1;
 			String message = event.getMessage().getContentRaw();
