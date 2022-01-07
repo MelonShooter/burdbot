@@ -7,13 +7,7 @@ import java.util.regex.Pattern;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.ChannelType;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
@@ -26,7 +20,7 @@ public class BotUtil {
 	private BotUtil() {}
 	
 	/**
-	 * Checks if the bot has write permissions. If the channel isn't a TextChannel provided, this returns true
+	 * Checks if the bot has write permissions. If the channel isn't a TextChannel or ThreadChannel provided, this returns true
 	 *
 	 * @param channel The channel
 	 * @return Whether the bot has write permissions.
@@ -34,10 +28,14 @@ public class BotUtil {
 	public static boolean hasWritePermission(MessageChannel channel) {
 		if(channel.getType() == ChannelType.TEXT) {
 			TextChannel textChannel = (TextChannel) channel;
-			return textChannel.getGuild().getSelfMember().hasPermission(textChannel, Permission.MESSAGE_WRITE);
-		} else {
-			return true;
+			return textChannel.getGuild().getSelfMember().hasPermission(textChannel, Permission.MESSAGE_SEND);
+		} else if(channel.getType().isThread()) {
+			ThreadChannel threadChannel = (ThreadChannel) channel;
+
+			return threadChannel.getGuild().getSelfMember().hasPermission(threadChannel, Permission.MESSAGE_SEND_IN_THREADS);
 		}
+
+		return true;
 	}
 	
 	/**
@@ -47,14 +45,7 @@ public class BotUtil {
 	 * @return Whether the bot has write permissions. Returns true if not from a guild or not a text channel
 	 */
 	public static boolean hasWritePermission(MessageReceivedEvent event) {
-		if(!event.isFromGuild() || event.getChannelType() != ChannelType.TEXT) {
-			return true;
-		}
-		
-		final Guild guild = event.getGuild();
-		final TextChannel channel = event.getTextChannel();
-
-		return guild.getSelfMember().hasPermission(channel, Permission.MESSAGE_WRITE);
+		return hasWritePermission(event.getChannel());
 	}
 	
 	/**

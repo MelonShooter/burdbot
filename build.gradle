@@ -9,7 +9,7 @@
 plugins {
   id 'java'
   id 'application'
-  id 'com.github.johnrengelman.shadow' version '6.0.0'
+  id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 shadowJar {
@@ -24,15 +24,19 @@ sourceSets {
 	main.java.srcDirs = ['src']
 }
 
-sourceCompatibility = 1.11
+java {
+  toolchain {
+    languageVersion.set(JavaLanguageVersion.of(17))
+  }
+}
 
 repositories {
-  jcenter()
+  mavenCentral()
 }
 
 dependencies {
-  implementation ('net.dv8tion:JDA:4.2.0_180') {
+  implementation ('net.dv8tion:JDA:5.0.0-alpha.3') {
     exclude module: 'opus-java'
   }
-  implementation 'org.jsoup:jsoup:1.13.1'
+  implementation 'org.jsoup:jsoup:1.14.3'
 }
