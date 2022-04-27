@@ -21,6 +21,9 @@ import com.deliburd.util.ActivitySwitcher;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 public class Main {
 	private static volatile JDA JDAInstance;
@@ -29,7 +32,9 @@ public class Main {
         reloadTexts(Constant.RELOAD_TEXTS_INTERVAL);
         FileUtil.deleteFolder(new File(Constant.FORVO_FOLDER));
 
-		JDABuilder burdRecorder = JDABuilder.createDefault(BotConstant.BOT_TOKEN_STRING);
+		JDABuilder burdRecorder = JDABuilder.createDefault(BotConstant.BOT_TOKEN_STRING, GatewayIntent.GUILD_MESSAGES)
+				.disableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOTE)
+				.setMemberCachePolicy(MemberCachePolicy.OWNER);
 		String helpDescription = "Displays a list of commands and their descriptions.";
         CommandManager commandManager = new CommandManager(Constant.COMMAND_PREFIX, helpDescription, burdRecorder);
         
